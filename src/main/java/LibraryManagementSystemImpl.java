@@ -19,23 +19,160 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
     @Override
     public ApiResult storeBook(Book book) {
         Connection conn = connector.getConn();
-        try{
+        PreparedStatement pStmt = null;
+        ResultSet rSet = null;
+        try {
+            String category = book.getCategory();
+            String title = book.getTitle();
+            String press = book.getPress();
+            int publishYear = book.getPublishYear();
+            String author = book.getAuthor();
+            double price = book.getPrice();
+            int stock = book.getStock();
             
+            /* check if there are same books */
+            String sameBookCheck = "SELECT COUNT(*) FROM book WHERE category = ? AND title = ? AND press = ? AND publish_year = ? AND author = ?";
+
+            pStmt = conn.prepareStatement(sameBookCheck);
+            pStmt.setString(1, category);
+            pStmt.setString(2, title);
+            pStmt.setString(3, press);
+            pStmt.setInt(4, publishYear);
+            pStmt.setString(5, author);
+
+            rSet = pStmt.executeQuery();
+            if (rSet.next()) {
+                return new ApiResult(false, "Already exist a same book.");
+            }
+
+            String storeBookQuery = "INSERT INTO book (category, title, press, publish_year, author, price, stock) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+            pStmt = conn.prepareStatement(storeBookQuery, PreparedStatement.RETURN_GENERATED_KEYS);
+            pStmt.setString(1, category);
+            pStmt.setString(2, title);
+            pStmt.setString(3, press);
+            pStmt.setInt(4, publishYear);
+            pStmt.setString(5, author);
+            pStmt.setDouble(6, price);
+            pStmt.setInt(7, stock);
+            int affectedRows = pStmt.executeUpdate();
+
+            if (affectedRows > 0) {
+                ResultSet rset = pStmt.getGeneratedKeys();
+                if(rset.next()) {
+                    int bookId = rset.getInt(1);
+                    book.setBookId(bookId);
+                }
+                commit(conn);
+            }
+            else {
+                rollback(conn);
+                return new ApiResult(false, "Fail to store book.");
+            }
         } catch (Exception e) {
             rollback(conn);
             return new ApiResult(false, e.getMessage());
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+                if (rSet != null) {
+                    rSet.close();
+                }
+                if (pStmt != null) {
+                    pStmt.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
         return new ApiResult(true, null);
     }
 
     @Override
     public ApiResult incBookStock(int bookId, int deltaStock) {
-        return new ApiResult(false, "Unimplemented Function");
+        Connection conn = connector.getConn();
+        PreparedStatement pStmt = null;
+        ResultSet rSet = null;
+        try {
+            String selectStockQuery = "SELECT stock FROM book where book_id = ?";
+            pStmt = conn.prepareStatement(selectStockQuery);
+            pStmt.setInt(1, bookId);
+            rSet = pStmt.executeQuery();
+
+            int currentStock = 0;
+            if (rSet.next()) {
+                currentStock = rSet.getInt("stock");
+            }
+            else {
+                return new ApiResult(false, "Book not found.");
+            }
+
+            if (currentStock + deltaStock < 0) {
+                deltaStock = -currentStock;
+            }
+
+            String incBookStockQuery = "UPDATE book SET stock = stock + ? WHERE book_id = ?";
+            
+            pStmt = conn.prepareStatement(incBookStockQuery);
+            pStmt.setInt(1, deltaStock);
+            pStmt.setInt(2, bookId);
+            int affectedRows = pStmt.executeUpdate();
+
+            if (affectedRows > 0) {
+                commit(conn);
+            }
+            else {
+                return new ApiResult(false, "Fail to increase book stock.");
+            }
+        } catch (Exception e) {
+            rollback(conn);
+            return new ApiResult(false, e.getMessage());
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+                if (rSet != null) {
+                    rSet.close();
+                }
+                if (pStmt != null) {
+                    pStmt.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return new ApiResult(true, null);
     }
 
     @Override
     public ApiResult storeBook(List<Book> books) {
-        return new ApiResult(false, "Unimplemented Function");
+        Connection conn = connector.getConn();
+        PreparedStatement pStmt = null;
+        ResultSet rSet = null;
+        try {
+
+        } catch (Exception e) {
+            rollback(conn);
+            return new ApiResult(false, e.getMessage());
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+                if (rSet != null) {
+                    rSet.close();
+                }
+                if (pStmt != null) {
+                    pStmt.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return new ApiResult(true, null);
     }
 
     @Override
@@ -80,7 +217,30 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
 
     @Override
     public ApiResult showCards() {
-        return new ApiResult(false, "Unimplemented Function");
+        Connection conn = connector.getConn();
+        PreparedStatement pStmt = null;
+        ResultSet rSet = null;
+        try {
+
+        } catch (Exception e) {
+            rollback(conn);
+            return new ApiResult(false, e.getMessage());
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+                if (rSet != null) {
+                    rSet.close();
+                }
+                if (pStmt != null) {
+                    pStmt.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return new ApiResult(true, null);
     }
 
     @Override

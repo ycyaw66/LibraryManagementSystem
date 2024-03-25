@@ -23,7 +23,7 @@ public class Main {
             }
 
             /* start do somethings */
-            
+
             /* end do somethings */
 
             // release database connection handler
