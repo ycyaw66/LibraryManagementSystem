@@ -1,11 +1,13 @@
 import entities.Book;
 import entities.Borrow;
 import entities.Card;
+import entities.Card.CardType;
 import queries.*;
 import utils.DBInitializer;
 import utils.DatabaseConnector;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class LibraryManagementSystemImpl implements LibraryManagementSystem {
@@ -225,7 +227,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
         PreparedStatement pStmt = null;
         ResultSet rSet = null;
         try {
-            String bookBorrowedCheck = "SELECT * FROM borrow WHERE book_id = ?";
+            String bookBorrowedCheck = "SELECT * FROM borrow WHERE book_id = ? AND return_time = 0";
             pStmt = conn.prepareStatement(bookBorrowedCheck);
             pStmt.setInt(1, bookId);
             rSet = pStmt.executeQuery();
@@ -317,7 +319,41 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
 
     @Override
     public ApiResult queryBook(BookQueryConditions conditions) {
-        return new ApiResult(false, "Unimplemented Function");
+        Connection conn = connector.getConn();
+        PreparedStatement pStmt = null;
+        ResultSet rSet = null;
+        try {
+            String catagory = conditions.getCategory();
+            String title = conditions.getTitle();
+            String press = conditions.getPress();
+            int minPublishYear = conditions.getMinPublishYear().intValue();
+            int maxPublishYear = conditions.getMaxPublishYear().intValue();
+            String author = conditions.getAuthor();
+            double minPrice = conditions.getMinPrice().doubleValue();
+            double maxPrice = conditions.getMaxPrice().doubleValue();
+            Book.SortColumn sortBy = conditions.getSortBy();
+            SortOrder sortOrder = conditions.getSortOrder();
+            
+
+        } catch (Exception e) {
+            rollback(conn);
+            return new ApiResult(false, e.getMessage());
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+                if (rSet != null) {
+                    rSet.close();
+                }
+                if (pStmt != null) {
+                    pStmt.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return new ApiResult(true, null);
     }
 
     @Override
@@ -397,7 +433,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
         PreparedStatement pStmt = null;
         ResultSet rSet = null;
         try {
-            String bookBorrowedCheck = "SELECT * FROM borrow WHERE card_id = ?";
+            String bookBorrowedCheck = "SELECT * FROM borrow WHERE card_id = ? AND return_time = 0";
             pStmt = conn.prepareStatement(bookBorrowedCheck);
             pStmt.setInt(1, cardId);
             rSet = pStmt.executeQuery();
@@ -446,7 +482,18 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
         PreparedStatement pStmt = null;
         ResultSet rSet = null;
         try {
+            String cardQuery = "SELECT * FROM card";
+            pStmt = conn.prepareStatement(cardQuery);
+            rSet = pStmt.executeQuery();
+            List<Card> cards = new ArrayList<Card>();
+            while (rSet.next()) {
+                int cardId = rSet.getInt("card_id");
+                String name = rSet.getString("name");
+                String department = rSet.getString("department");
+                String tmptype = rSet.getString("type");
+                Card.CardType type = Card.CardType.values(tmptype);
 
+            }
         } catch (Exception e) {
             rollback(conn);
             return new ApiResult(false, e.getMessage());
