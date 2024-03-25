@@ -80,7 +80,7 @@ public interface LibraryManagementSystem {
     ApiResult removeBook(int bookId);
 
     /**
-     * modify a book's information by book_id.book_id.
+     * modify a book's information by book_id.
      *
      * Note that you should not modify its book_id and stock!
      *

@@ -61,11 +61,8 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 int bookId = rSet.getInt(1);
                 book.setBookId(bookId);
             }
-            else {
-                rollback(conn);
-                return new ApiResult(false, "Fail to store book.");
-            }
-            commit(conn);    
+            
+            commit(conn);
         } catch (Exception e) {
             rollback(conn);
             return new ApiResult(false, e.getMessage());
@@ -196,6 +193,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 int bookId = rSet.getInt(1);
                 books.get(index++).setBookId(bookId);
             }
+
             commit(conn);
         } catch (Exception e) {
             rollback(conn);
@@ -272,7 +270,49 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
 
     @Override
     public ApiResult modifyBookInfo(Book book) {
-        return new ApiResult(false, "Unimplemented Function");
+        Connection conn = connector.getConn();
+        PreparedStatement pStmt = null;
+        ResultSet rSet = null;
+        try {
+            String bookExistCheck = "SELECT * FROM book WHERE book_id = ?";
+            pStmt = conn.prepareStatement(bookExistCheck);
+            pStmt.setInt(1, book.getBookId());
+            rSet = pStmt.executeQuery();
+            if (!rSet.next()) {
+                return new ApiResult(false, "Book not found.");
+            }
+
+            String modifyBookInfoQuery = "UPDATE book SET category = ?, title = ?, press = ?, publish_year = ?, author = ?, price = ? WHERE book_id = ?";
+            pStmt = conn.prepareStatement(modifyBookInfoQuery);
+            pStmt.setString(1, book.getCategory());
+            pStmt.setString(2, book.getTitle());
+            pStmt.setString(3, book.getPress());
+            pStmt.setInt(4, book.getPublishYear());
+            pStmt.setString(5, book.getAuthor());
+            pStmt.setDouble(6, book.getPrice());
+            pStmt.setInt(7, book.getBookId());
+            pStmt.executeUpdate();
+
+            commit(conn);
+        } catch (Exception e) {
+            rollback(conn);
+            return new ApiResult(false, e.getMessage());
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+                if (rSet != null) {
+                    rSet.close();
+                }
+                if (pStmt != null) {
+                    pStmt.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return new ApiResult(true, null);
     }
 
     @Override
@@ -297,13 +337,107 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
 
     @Override
     public ApiResult registerCard(Card card) {
+        Connection conn = connector.getConn();
+        PreparedStatement pStmt = null;
+        ResultSet rSet = null;
+        try {
+            String name = card.getName();
+            String department = card.getDepartment();
+            String type = card.getType().getStr();
+            
+            String sameCardCheck = "SELECT COUNT(*) FROM card WHERE name = ? AND department = ? AND type = ?";
 
-        return new ApiResult(false, "Unimplemented Function");
+            pStmt = conn.prepareStatement(sameCardCheck);
+            pStmt.setString(1, name);
+            pStmt.setString(2, department);
+            pStmt.setString(3, type);
+            rSet = pStmt.executeQuery();
+            if (rSet.next()) {
+                return new ApiResult(false, "Already exist a same card.");
+            }
+
+            String storeCardQuery = "INSERT INTO card (name, department, type) VALUES (?, ?, ?)";
+            pStmt = conn.prepareStatement(storeCardQuery, PreparedStatement.RETURN_GENERATED_KEYS);
+            pStmt.setString(1, name);
+            pStmt.setString(2, department);
+            pStmt.setString(3, type);
+            pStmt.executeUpdate();
+
+            rSet = pStmt.getGeneratedKeys();
+            if (rSet.next()) {
+                int cardId = rSet.getInt(1);
+                card.setCardId(cardId);
+            }
+
+            commit(conn);
+        } catch (Exception e) {
+            rollback(conn);
+            return new ApiResult(false, e.getMessage());
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+                if (rSet != null) {
+                    rSet.close();
+                }
+                if (pStmt != null) {
+                    pStmt.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return new ApiResult(true, null);
     }
 
     @Override
     public ApiResult removeCard(int cardId) {
-        return new ApiResult(false, "Unimplemented Function");
+        Connection conn = connector.getConn();
+        PreparedStatement pStmt = null;
+        ResultSet rSet = null;
+        try {
+            String bookBorrowedCheck = "SELECT * FROM borrow WHERE card_id = ?";
+            pStmt = conn.prepareStatement(bookBorrowedCheck);
+            pStmt.setInt(1, cardId);
+            rSet = pStmt.executeQuery();
+            if (rSet.next()) {
+                return new ApiResult(false, "The card has unreturned books.");
+            }
+
+            String cardExistCheck = "SELECT * FROM card WHERE card_id = ?";
+            pStmt = conn.prepareStatement(cardExistCheck);
+            pStmt.setInt(1, cardId);
+            rSet = pStmt.executeQuery();
+            if (!rSet.next()) {
+                return new ApiResult(false, "Card not found.");
+            }
+
+            String removeBookQuery = "DELETE FROM card WHERE card_id = ?";
+            pStmt = conn.prepareStatement(removeBookQuery);
+            pStmt.setInt(1, cardId);
+            pStmt.executeUpdate();
+
+            commit(conn);
+        } catch (Exception e) {
+            rollback(conn);
+            return new ApiResult(false, e.getMessage());
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+                if (rSet != null) {
+                    rSet.close();
+                }
+                if (pStmt != null) {
+                    pStmt.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return new ApiResult(true, null);
     }
 
     @Override
