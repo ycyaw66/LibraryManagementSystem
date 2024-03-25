@@ -19,7 +19,10 @@ public class Main {
                 log.severe("Failed to connect database.");
                 System.exit(1);
             }
-            /* do somethings */
+
+            /* start do somethings */
+            
+            /* end do somethings */
 
             // release database connection handler
             if (connector.release()) {

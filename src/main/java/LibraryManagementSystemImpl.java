@@ -18,6 +18,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
 
     @Override
     public ApiResult storeBook(Book book) {
+        
         return new ApiResult(false, "Unimplemented Function");
     }
 
