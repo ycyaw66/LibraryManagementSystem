@@ -3,6 +3,8 @@ import utils.DatabaseConnector;
 
 import java.util.logging.Logger;
 
+import entities.Book;
+
 public class Main {
 
     private static final Logger log = Logger.getLogger(Main.class.getName());

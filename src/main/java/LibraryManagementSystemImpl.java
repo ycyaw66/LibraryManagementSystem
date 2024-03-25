@@ -18,8 +18,14 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
 
     @Override
     public ApiResult storeBook(Book book) {
-        
-        return new ApiResult(false, "Unimplemented Function");
+        Connection conn = connector.getConn();
+        try{
+            
+        } catch (Exception e) {
+            rollback(conn);
+            return new ApiResult(false, e.getMessage());
+        }
+        return new ApiResult(true, null);
     }
 
     @Override
