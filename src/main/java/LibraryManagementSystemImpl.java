@@ -39,7 +39,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setString(3, press);
             pStmt.setInt(4, publishYear);
             pStmt.setString(5, author);
-
             rSet = pStmt.executeQuery();
             if (rSet.next()) {
                 return new ApiResult(false, "Already exist a same book.");
@@ -55,20 +54,18 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setString(5, author);
             pStmt.setDouble(6, price);
             pStmt.setInt(7, stock);
-            int affectedRows = pStmt.executeUpdate();
+            pStmt.executeUpdate();
 
-            if (affectedRows > 0) {
-                ResultSet rset = pStmt.getGeneratedKeys();
-                if(rset.next()) {
-                    int bookId = rset.getInt(1);
-                    book.setBookId(bookId);
-                }
-                commit(conn);
+            rSet = pStmt.getGeneratedKeys();
+            if (rSet.next()) {
+                int bookId = rSet.getInt(1);
+                book.setBookId(bookId);
             }
             else {
                 rollback(conn);
                 return new ApiResult(false, "Fail to store book.");
             }
+            commit(conn);    
         } catch (Exception e) {
             rollback(conn);
             return new ApiResult(false, e.getMessage());
@@ -151,9 +148,107 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
     public ApiResult storeBook(List<Book> books) {
         Connection conn = connector.getConn();
         PreparedStatement pStmt = null;
+        PreparedStatement pStmt_i = null;
         ResultSet rSet = null;
         try {
+            String sameBookCheck = "SELECT COUNT(*) FROM book WHERE category = ? AND title = ? AND press = ? AND publish_year = ? AND author = ?";
+            pStmt = conn.prepareStatement(sameBookCheck);
 
+            String storeBookQuery = "INSERT INTO book (category, title, press, publish_year, author, price, stock) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            pStmt_i = conn.prepareStatement(storeBookQuery, PreparedStatement.RETURN_GENERATED_KEYS);
+
+            for (Book book : books) {
+                String category = book.getCategory();
+                String title = book.getTitle();
+                String press = book.getPress();
+                int publishYear = book.getPublishYear();
+                String author = book.getAuthor();
+                double price = book.getPrice();
+                int stock = book.getStock();
+                
+                /* check if there are same books */
+                pStmt.setString(1, category);
+                pStmt.setString(2, title);
+                pStmt.setString(3, press);
+                pStmt.setInt(4, publishYear);
+                pStmt.setString(5, author);
+                rSet = pStmt.executeQuery();
+
+                if (rSet.next()) {
+                    rollback(conn);
+                    return new ApiResult(false, "Already exist a same book.");
+                }
+
+                pStmt_i.setString(1, category);
+                pStmt_i.setString(2, title);
+                pStmt_i.setString(3, press);
+                pStmt_i.setInt(4, publishYear);
+                pStmt_i.setString(5, author);
+                pStmt_i.setDouble(6, price);
+                pStmt_i.setInt(7, stock);
+                pStmt_i.addBatch();
+            }
+
+            pStmt_i.executeBatch();
+            rSet = pStmt_i.getGeneratedKeys();
+            int index = 0;
+            while (rSet.next()) {
+                int bookId = rSet.getInt(1);
+                books.get(index++).setBookId(bookId);
+            }
+            commit(conn);
+        } catch (Exception e) {
+            rollback(conn);
+            return new ApiResult(false, e.getMessage());
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+                if (rSet != null) {
+                    rSet.close();
+                }
+                if (pStmt != null) {
+                    pStmt.close();
+                }
+                if (pStmt_i != null) {
+                    pStmt_i.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return new ApiResult(true, null);
+    }
+
+    @Override
+    public ApiResult removeBook(int bookId) {
+        Connection conn = connector.getConn();
+        PreparedStatement pStmt = null;
+        ResultSet rSet = null;
+        try {
+            String bookBorrowedCheck = "SELECT * FROM borrow WHERE book_id = ?";
+            pStmt = conn.prepareStatement(bookBorrowedCheck);
+            pStmt.setInt(1, bookId);
+            rSet = pStmt.executeQuery();
+            if (rSet.next()) {
+                return new ApiResult(false, "Book has been borrowed.");
+            }
+
+            String bookExistCheck = "SELECT * FROM book WHERE book_id = ?";
+            pStmt = conn.prepareStatement(bookExistCheck);
+            pStmt.setInt(1, bookId);
+            rSet = pStmt.executeQuery();
+            if (!rSet.next()) {
+                return new ApiResult(false, "Book not found.");
+            }
+
+            String removeBookQuery = "DELETE FROM book WHERE book_id = ?";
+            pStmt = conn.prepareStatement(removeBookQuery);
+            pStmt.setInt(1, bookId);
+            pStmt.executeUpdate();
+
+            commit(conn);
         } catch (Exception e) {
             rollback(conn);
             return new ApiResult(false, e.getMessage());
@@ -173,11 +268,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             }
         }
         return new ApiResult(true, null);
-    }
-
-    @Override
-    public ApiResult removeBook(int bookId) {
-        return new ApiResult(false, "Unimplemented Function");
     }
 
     @Override
@@ -207,6 +297,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
 
     @Override
     public ApiResult registerCard(Card card) {
+
         return new ApiResult(false, "Unimplemented Function");
     }
 
