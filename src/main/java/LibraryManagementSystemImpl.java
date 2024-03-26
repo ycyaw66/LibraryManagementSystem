@@ -531,15 +531,17 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 pStmt.setInt(1, bookId);
                 resBook = pStmt.executeQuery();
 
-                Book book = new Book(resBook.getString("category"), resBook.getString("title"), resBook.getString("press"), resBook.getInt("publish_year"), resBook.getString("author"), resBook.getDouble("price"), resBook.getInt("stock"));
-                book.setBookId(bookId);
+                if (resBook.next()) {
+                    Book book = new Book(resBook.getString("category"), resBook.getString("title"), resBook.getString("press"), resBook.getInt("publish_year"), resBook.getString("author"), resBook.getDouble("price"), resBook.getInt("stock"));
+                    book.setBookId(bookId);
 
-                Borrow borrow = new Borrow(bookId, cardId);
-                borrow.setBorrowTime(rSet.getLong("borrow_time"));
-                borrow.setReturnTime(rSet.getLong("return_time"));
+                    Borrow borrow = new Borrow(bookId, cardId);
+                    borrow.setBorrowTime(rSet.getLong("borrow_time"));
+                    borrow.setReturnTime(rSet.getLong("return_time"));
 
-                Item item = new Item(cardId, book, borrow);
-                items.add(item);
+                    Item item = new Item(cardId, book, borrow);
+                    items.add(item);
+                }
             }
             borrowHistories = new BorrowHistories(items);
             
