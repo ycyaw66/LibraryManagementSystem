@@ -34,7 +34,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             int stock = book.getStock();
             
             /* check if there are same books */
-            String sameBookCheck = "SELECT COUNT(*) FROM book WHERE category = ? AND title = ? AND press = ? AND publish_year = ? AND author = ?";
+            String sameBookCheck = "SELECT * FROM book WHERE category = ? AND title = ? AND press = ? AND publish_year = ? AND author = ?";
 
             pStmt = conn.prepareStatement(sameBookCheck);
             pStmt.setString(1, category);
@@ -71,9 +71,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             return new ApiResult(false, e.getMessage());
         } finally {
             try {
-                if (conn != null) {
-                    conn.close();
-                }
                 if (rSet != null) {
                     rSet.close();
                 }
@@ -128,9 +125,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             return new ApiResult(false, e.getMessage());
         } finally {
             try {
-                if (conn != null) {
-                    conn.close();
-                }
                 if (rSet != null) {
                     rSet.close();
                 }
@@ -203,9 +197,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             return new ApiResult(false, e.getMessage());
         } finally {
             try {
-                if (conn != null) {
-                    conn.close();
-                }
                 if (rSet != null) {
                     rSet.close();
                 }
@@ -255,9 +246,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             return new ApiResult(false, e.getMessage());
         } finally {
             try {
-                if (conn != null) {
-                    conn.close();
-                }
                 if (rSet != null) {
                     rSet.close();
                 }
@@ -302,9 +290,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             return new ApiResult(false, e.getMessage());
         } finally {
             try {
-                if (conn != null) {
-                    conn.close();
-                }
                 if (rSet != null) {
                     rSet.close();
                 }
@@ -380,9 +365,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             return new ApiResult(false, e.getMessage());
         } finally {
             try {
-                if (conn != null) {
-                    conn.close();
-                }
                 if (rSet != null) {
                     rSet.close();
                 }
@@ -449,9 +431,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             return new ApiResult(false, e.getMessage());
         } finally {
             try {
-                if (conn != null) {
-                    conn.close();
-                }
                 if (rSet != null) {
                     rSet.close();
                 }
@@ -502,9 +481,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             return new ApiResult(false, e.getMessage());
         } finally {
             try {
-                if (conn != null) {
-                    conn.close();
-                }
                 if (rSet != null) {
                     rSet.close();
                 }
@@ -556,9 +532,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             return new ApiResult(false, e.getMessage());
         } finally {
             try {
-                if (conn != null) {
-                    conn.close();
-                }
                 if (rSet != null) {
                     rSet.close();
                 }
@@ -615,9 +588,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             return new ApiResult(false, e.getMessage());
         } finally {
             try {
-                if (conn != null) {
-                    conn.close();
-                }
                 if (rSet != null) {
                     rSet.close();
                 }
@@ -664,9 +634,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             return new ApiResult(false, e.getMessage());
         } finally {
             try {
-                if (conn != null) {
-                    conn.close();
-                }
                 if (rSet != null) {
                     rSet.close();
                 }
@@ -708,9 +675,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             return new ApiResult(false, e.getMessage());
         } finally {
             try {
-                if (conn != null) {
-                    conn.close();
-                }
                 if (rSet != null) {
                     rSet.close();
                 }
