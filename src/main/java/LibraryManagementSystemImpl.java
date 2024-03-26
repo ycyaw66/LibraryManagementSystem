@@ -2,6 +2,7 @@ import entities.Book;
 import entities.Borrow;
 import entities.Card;
 import queries.*;
+import queries.BorrowHistories.Item;
 import utils.DBInitializer;
 import utils.DatabaseConnector;
 
@@ -479,7 +480,59 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
 
     @Override
     public ApiResult showBorrowHistory(int cardId) {
-        return new ApiResult(false, "Unimplemented Function");
+        Connection conn = connector.getConn();
+        PreparedStatement pStmt = null;
+        ResultSet rSet = null, resBook = null;
+        BorrowHistories borrowHistories;
+        try {
+            String borrowQuery = "SELECT * FROM borrow WHERE card_id = ? ORDER BY borrow_time DESC, book_id ASC";
+            pStmt = conn.prepareStatement(borrowQuery);
+            pStmt.setInt(1, cardId);
+            rSet = pStmt.executeQuery();
+
+            List<Item> items = new ArrayList<Item>();
+            while (rSet.next()) {
+                int bookId = rSet.getInt("book_id");
+                String bookQuery = "SELECT * FROM book WHERE book_id = ?";
+                pStmt = conn.prepareStatement(bookQuery);
+                pStmt.setInt(1, bookId);
+                resBook = pStmt.executeQuery();
+
+                Book book = new Book(resBook.getString("catagory"), resBook.getString("title"), resBook.getString("press"), resBook.getInt("publish_year"), resBook.getString("author"), resBook.getDouble("price"), resBook.getInt("stock"));
+                book.setBookId(bookId);
+
+                Borrow borrow = new Borrow(bookId, cardId);
+                borrow.setBorrowTime(rSet.getLong("borrow_time"));
+                borrow.setReturnTime(rSet.getLong("return_time"));
+
+                Item item = new Item(cardId, book, borrow);
+                items.add(item);
+            }
+            borrowHistories = new BorrowHistories(items);
+            
+            commit(conn);
+        } catch (Exception e) {
+            rollback(conn);
+            return new ApiResult(false, e.getMessage());
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+                if (rSet != null) {
+                    rSet.close();
+                }
+                if (resBook != null) {
+                    resBook.close();
+                }
+                if (pStmt != null) {
+                    pStmt.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return new ApiResult(true, null, borrowHistories);
     }
 
     @Override
@@ -594,7 +647,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
         ResultSet rSet = null;
         CardList cardList;
         try {
-            String cardQuery = "SELECT * FROM card";
+            String cardQuery = "SELECT * FROM card ORDER BY card_id ASC";
             pStmt = conn.prepareStatement(cardQuery);
             rSet = pStmt.executeQuery();
             List<Card> cards = new ArrayList<Card>();
