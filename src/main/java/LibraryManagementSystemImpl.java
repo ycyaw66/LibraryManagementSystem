@@ -367,7 +367,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             SortOrder sortOrder = conditions.getSortOrder();
             Comparator<Book> comparator = conditions.getSortBy().getComparator();
             if (sortOrder == SortOrder.DESC) {
-                comparator.reversed();
+                comparator = comparator.reversed();
             }
             books.sort(comparator);
             bookQueryResults = new BookQueryResults(books);
@@ -431,7 +431,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setInt(1, bookId);
             pStmt.executeUpdate();
 
-            String insertBorrowQuery = "INSERT INTO borrow (card_id, book_id, borrow_time) VALUES (?, ?, ?)";
+            String insertBorrowQuery = "INSERT INTO borrow (card_id, book_id, borrow_time, return_time) VALUES (?, ?, ?, 0)";
             pStmt = conn.prepareStatement(insertBorrowQuery);
             pStmt.setInt(1, cardId);
             pStmt.setInt(2, bookId);
@@ -472,7 +472,11 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setInt(1, bookId);
             pStmt.setInt(2, cardId);
             rSet = pStmt.executeQuery();
-            if (rSet.next()) {
+            if (!rSet.next()) {
+                return new ApiResult(false, "Fail to return the book.");
+            }
+            long borrowTime = rSet.getLong("borrow_time");
+            if (borrowTime >= returnTime) {
                 return new ApiResult(false, "Fail to return the book.");
             }
 
@@ -572,7 +576,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             String type = card.getType().getStr();
             
             String sameCardCheck = "SELECT * FROM card WHERE name = ? AND department = ? AND type = ?";
-
             pStmt = conn.prepareStatement(sameCardCheck);
             pStmt.setString(1, name);
             pStmt.setString(2, department);
