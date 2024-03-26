@@ -9,7 +9,6 @@ import utils.DatabaseConnector;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Comparator;
 
 public class LibraryManagementSystemImpl implements LibraryManagementSystem {
 
@@ -339,6 +338,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 selectBookQuery += " AND author = ?";
                 authorParam = index++;
             }
+            selectBookQuery += " ORDER BY ? ?";
             pStmt = conn.prepareStatement(selectBookQuery);
             pStmt.setInt(1, minPublishYear);
             pStmt.setInt(2, maxPublishYear);
@@ -348,6 +348,8 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             if (titleParam > 0) pStmt.setString(titleParam, title);
             if (pressParam > 0) pStmt.setString(pressParam, press);
             if (authorParam > 0) pStmt.setString(authorParam, author);
+            pStmt.setString(index++, conditions.getSortBy().getValue());
+            pStmt.setString(index++, conditions.getSortOrder().getValue());
             rSet = pStmt.executeQuery();
 
             List<Book> books = new ArrayList<Book>();
@@ -364,12 +366,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 book.setBookId(bookId);
                 books.add(book);
             }
-            SortOrder sortOrder = conditions.getSortOrder();
-            Comparator<Book> comparator = conditions.getSortBy().getComparator();
-            if (sortOrder == SortOrder.DESC) {
-                comparator = comparator.reversed();
-            }
-            books.sort(comparator);
             bookQueryResults = new BookQueryResults(books);
 
             commit(conn);
