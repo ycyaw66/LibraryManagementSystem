@@ -90,7 +90,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
         PreparedStatement pStmt = null;
         ResultSet rSet = null;
         try {
-            String selectStockQuery = "SELECT stock FROM book where book_id = ?";
+            String selectStockQuery = "SELECT stock FROM book WHERE book_id = ?";
             pStmt = conn.prepareStatement(selectStockQuery);
             pStmt.setInt(1, bookId);
             rSet = pStmt.executeQuery();
@@ -104,7 +104,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             }
 
             if (currentStock + deltaStock < 0) {
-                deltaStock = -currentStock;
+                return new ApiResult(false, "Insufficient stock.");
             }
 
             String incBookStockQuery = "UPDATE book SET stock = stock + ? WHERE book_id = ?";
@@ -112,14 +112,9 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt = conn.prepareStatement(incBookStockQuery);
             pStmt.setInt(1, deltaStock);
             pStmt.setInt(2, bookId);
-            int affectedRows = pStmt.executeUpdate();
+            pStmt.executeUpdate();
 
-            if (affectedRows > 0) {
-                commit(conn);
-            }
-            else {
-                return new ApiResult(false, "Fail to increase book stock.");
-            }
+            commit(conn);
         } catch (Exception e) {
             rollback(conn);
             return new ApiResult(false, e.getMessage());
@@ -145,7 +140,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
         PreparedStatement pStmt_i = null;
         ResultSet rSet = null;
         try {
-            String sameBookCheck = "SELECT COUNT(*) FROM book WHERE category = ? AND title = ? AND press = ? AND publish_year = ? AND author = ?";
+            String sameBookCheck = "SELECT * FROM book WHERE category = ? AND title = ? AND press = ? AND publish_year = ? AND author = ?";
             pStmt = conn.prepareStatement(sameBookCheck);
 
             String storeBookQuery = "INSERT INTO book (category, title, press, publish_year, author, price, stock) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -310,13 +305,13 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
         ResultSet rSet = null;
         BookQueryResults bookQueryResults;
         try {
-            String catagoryLimit = conditions.getCategory();
-            String titleLimit = conditions.getTitle();
-            String pressLimit = conditions.getPress();
-            Integer tminPublishYear = conditions.getMinPublishYear().intValue();
-            Integer tmaxPublishYear = conditions.getMaxPublishYear().intValue();
+            String category = conditions.getCategory();
+            String title = conditions.getTitle();
+            String press = conditions.getPress();
+            Integer tminPublishYear = conditions.getMinPublishYear();
+            Integer tmaxPublishYear = conditions.getMaxPublishYear();
             int minPublishYear = -2147483647, maxPublishYear = 2147483647;
-            String authorLimit = conditions.getAuthor();
+            String author = conditions.getAuthor();
             Double tminPrice = conditions.getMinPrice();
             Double tmaxPrice = conditions.getMaxPrice();
             double minPrice = 0, maxPrice = 2147483647;
@@ -325,39 +320,57 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             if(tminPrice != null) minPrice = tminPrice.doubleValue();
             if(tmaxPrice != null) maxPrice = tmaxPrice.doubleValue();
 
-            String selectBookQuery = "SELECT * FROM book";
+            String selectBookQuery = "SELECT * FROM book WHERE publish_year >= ? AND publish_year <= ? AND price >= ? AND price <= ?";
+            int index = 5;
+            int categoryParam = 0, titleParam = 0, pressParam = 0, authorParam = 0;
+            if (category != null) {
+                selectBookQuery += " AND category = ?";
+                categoryParam = index++;
+            }
+            if (title != null) {
+                selectBookQuery += " AND title = ?";
+                titleParam = index++;
+            }
+            if (press != null) {
+                selectBookQuery += " AND press = ?";
+                pressParam = index++;
+            }
+            if (author != null) {
+                selectBookQuery += " AND author = ?";
+                authorParam = index++;
+            }
             pStmt = conn.prepareStatement(selectBookQuery);
+            pStmt.setInt(1, minPublishYear);
+            pStmt.setInt(2, maxPublishYear);
+            pStmt.setDouble(3, minPrice);
+            pStmt.setDouble(4, maxPrice);
+            if (categoryParam > 0) pStmt.setString(categoryParam, category);
+            if (titleParam > 0) pStmt.setString(titleParam, title);
+            if (pressParam > 0) pStmt.setString(pressParam, press);
+            if (authorParam > 0) pStmt.setString(authorParam, author);
             rSet = pStmt.executeQuery();
 
             List<Book> books = new ArrayList<Book>();
             while (rSet.next()) {
                 int bookId = rSet.getInt("book_id");
-                String category = rSet.getString("catagory");
-                String title = rSet.getString("title");
-                String press = rSet.getString("press");
-                int publishYear = rSet.getInt("publish_year");
-                String author = rSet.getString("author");
-                double price = rSet.getDouble("price");
-                int stock = rSet.getInt("stock");
-                if (catagoryLimit != null && category != catagoryLimit) continue;
-                if (titleLimit != null && title != titleLimit) continue;
-                if (pressLimit != null && press != pressLimit) continue;
-                if (authorLimit != null && author != authorLimit) continue;
-                if (publishYear < minPublishYear || publishYear > maxPublishYear) continue;
-                if (price < minPrice || price > maxPrice) continue;
-
-                Book book = new Book(category, title, press, publishYear, author, price, stock);
+                String tempCategory = rSet.getString("category");
+                String tempTitle = rSet.getString("title");
+                String tempPress = rSet.getString("press");
+                int tempPublishYear = rSet.getInt("publish_year");
+                String tempAuthor = rSet.getString("author");
+                double tempPrice = rSet.getDouble("price");
+                int tempStock = rSet.getInt("stock");
+                Book book = new Book(tempCategory, tempTitle, tempPress, tempPublishYear, tempAuthor, tempPrice, tempStock);
                 book.setBookId(bookId);
                 books.add(book);
             }
-            bookQueryResults = new BookQueryResults(books);
-            Book.SortColumn sortBy = conditions.getSortBy();
             SortOrder sortOrder = conditions.getSortOrder();
-            Comparator<Book> comparator = sortBy.getComparator();
+            Comparator<Book> comparator = conditions.getSortBy().getComparator();
             if (sortOrder == SortOrder.DESC) {
                 comparator.reversed();
             }
             books.sort(comparator);
+            bookQueryResults = new BookQueryResults(books);
 
             commit(conn);
         } catch (Exception e) {
@@ -514,7 +527,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 pStmt.setInt(1, bookId);
                 resBook = pStmt.executeQuery();
 
-                Book book = new Book(resBook.getString("catagory"), resBook.getString("title"), resBook.getString("press"), resBook.getInt("publish_year"), resBook.getString("author"), resBook.getDouble("price"), resBook.getInt("stock"));
+                Book book = new Book(resBook.getString("category"), resBook.getString("title"), resBook.getString("press"), resBook.getInt("publish_year"), resBook.getString("author"), resBook.getDouble("price"), resBook.getInt("stock"));
                 book.setBookId(bookId);
 
                 Borrow borrow = new Borrow(bookId, cardId);
@@ -558,7 +571,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             String department = card.getDepartment();
             String type = card.getType().getStr();
             
-            String sameCardCheck = "SELECT COUNT(*) FROM card WHERE name = ? AND department = ? AND type = ?";
+            String sameCardCheck = "SELECT * FROM card WHERE name = ? AND department = ? AND type = ?";
 
             pStmt = conn.prepareStatement(sameCardCheck);
             pStmt.setString(1, name);
