@@ -472,10 +472,13 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setInt(1, bookId);
             pStmt.setInt(2, cardId);
             rSet = pStmt.executeQuery();
-            if (!rSet.next()) {
+            long borrowTime = 0;
+            if (rSet.next()) {
+                borrowTime = rSet.getLong("borrow_time");
+            }
+            else {
                 return new ApiResult(false, "Fail to return the book.");
             }
-            long borrowTime = rSet.getLong("borrow_time");
             if (borrowTime >= returnTime) {
                 return new ApiResult(false, "Fail to return the book.");
             }
@@ -485,7 +488,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setInt(1, bookId);
             pStmt.executeUpdate();
 
-            String returnQuery = "UPDATE borrow SET return_time = ? WHERE card_id = ? AND book_id = ?";
+            String returnQuery = "UPDATE borrow SET return_time = ? WHERE card_id = ? AND book_id = ? AND return_time = 0";
             pStmt = conn.prepareStatement(returnQuery);
             pStmt.setLong(1, returnTime);
             pStmt.setInt(2, cardId);
