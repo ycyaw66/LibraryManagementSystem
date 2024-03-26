@@ -9,6 +9,7 @@ import utils.DatabaseConnector;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Comparator;
 
 public class LibraryManagementSystemImpl implements LibraryManagementSystem {
 
@@ -322,19 +323,58 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
         Connection conn = connector.getConn();
         PreparedStatement pStmt = null;
         ResultSet rSet = null;
+        BookQueryResults bookQueryResults;
         try {
-            String catagory = conditions.getCategory();
-            String title = conditions.getTitle();
-            String press = conditions.getPress();
-            int minPublishYear = conditions.getMinPublishYear().intValue();
-            int maxPublishYear = conditions.getMaxPublishYear().intValue();
-            String author = conditions.getAuthor();
-            double minPrice = conditions.getMinPrice().doubleValue();
-            double maxPrice = conditions.getMaxPrice().doubleValue();
+            String catagoryLimit = conditions.getCategory();
+            String titleLimit = conditions.getTitle();
+            String pressLimit = conditions.getPress();
+            Integer tminPublishYear = conditions.getMinPublishYear().intValue();
+            Integer tmaxPublishYear = conditions.getMaxPublishYear().intValue();
+            int minPublishYear = -2147483647, maxPublishYear = 2147483647;
+            String authorLimit = conditions.getAuthor();
+            Double tminPrice = conditions.getMinPrice();
+            Double tmaxPrice = conditions.getMaxPrice();
+            double minPrice = 0, maxPrice = 2147483647;
+            if(tminPublishYear != null) minPublishYear = tminPublishYear.intValue();
+            if(tmaxPublishYear != null) maxPublishYear = tmaxPublishYear.intValue();
+            if(tminPrice != null) minPrice = tminPrice.doubleValue();
+            if(tmaxPrice != null) maxPrice = tmaxPrice.doubleValue();
+
+            String selectBookQuery = "SELECT * FROM book";
+            pStmt = conn.prepareStatement(selectBookQuery);
+            rSet = pStmt.executeQuery();
+
+            List<Book> books = new ArrayList<Book>();
+            while (rSet.next()) {
+                int bookId = rSet.getInt("book_id");
+                String category = rSet.getString("catagory");
+                String title = rSet.getString("title");
+                String press = rSet.getString("press");
+                int publishYear = rSet.getInt("publish_year");
+                String author = rSet.getString("author");
+                double price = rSet.getDouble("price");
+                int stock = rSet.getInt("stock");
+                if (catagoryLimit != null && category != catagoryLimit) continue;
+                if (titleLimit != null && title != titleLimit) continue;
+                if (pressLimit != null && press != pressLimit) continue;
+                if (authorLimit != null && author != authorLimit) continue;
+                if (publishYear < minPublishYear || publishYear > maxPublishYear) continue;
+                if (price < minPrice || price > maxPrice) continue;
+
+                Book book = new Book(category, title, press, publishYear, author, price, stock);
+                book.setBookId(bookId);
+                books.add(book);
+            }
+            bookQueryResults = new BookQueryResults(books);
             Book.SortColumn sortBy = conditions.getSortBy();
             SortOrder sortOrder = conditions.getSortOrder();
-            
+            Comparator<Book> comparator = sortBy.getComparator();
+            if (sortOrder == SortOrder.DESC) {
+                comparator.reversed();
+            }
+            books.sort(comparator);
 
+            commit(conn);
         } catch (Exception e) {
             rollback(conn);
             return new ApiResult(false, e.getMessage());
@@ -353,7 +393,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 e.printStackTrace();
             }
         }
-        return new ApiResult(true, null);
+        return new ApiResult(true, null, bookQueryResults);
     }
 
     @Override
