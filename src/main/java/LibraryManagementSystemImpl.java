@@ -313,7 +313,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             String author = conditions.getAuthor();
             Double tminPrice = conditions.getMinPrice();
             Double tmaxPrice = conditions.getMaxPrice();
-            double minPrice = 0, maxPrice = 2147483647;
+            double minPrice = -2147483647, maxPrice = 2147483647;
             if(tminPublishYear != null) minPublishYear = tminPublishYear.intValue();
             if(tmaxPublishYear != null) maxPublishYear = tmaxPublishYear.intValue();
             if(tminPrice != null) minPrice = tminPrice.doubleValue();
@@ -321,22 +321,22 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
 
             String selectBookQuery = "SELECT * FROM book WHERE publish_year >= ? AND publish_year <= ? AND price >= ? AND price <= ?";
             int index = 5;
-            int categoryParam = 0, titleParam = 0, pressParam = 0, authorParam = 0;
+            int categoryIndex = 0, titleIndex = 0, pressIndex = 0, authorIndex = 0;
             if (category != null) {
                 selectBookQuery += " AND category = ?";
-                categoryParam = index++;
+                categoryIndex = index++;
             }
             if (title != null) {
                 selectBookQuery += " AND title = ?";
-                titleParam = index++;
+                titleIndex = index++;
             }
             if (press != null) {
                 selectBookQuery += " AND press = ?";
-                pressParam = index++;
+                pressIndex = index++;
             }
             if (author != null) {
                 selectBookQuery += " AND author = ?";
-                authorParam = index++;
+                authorIndex = index++;
             }
             selectBookQuery += " ORDER BY ? ?";
             pStmt = conn.prepareStatement(selectBookQuery);
@@ -344,10 +344,10 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setInt(2, maxPublishYear);
             pStmt.setDouble(3, minPrice);
             pStmt.setDouble(4, maxPrice);
-            if (categoryParam > 0) pStmt.setString(categoryParam, category);
-            if (titleParam > 0) pStmt.setString(titleParam, title);
-            if (pressParam > 0) pStmt.setString(pressParam, press);
-            if (authorParam > 0) pStmt.setString(authorParam, author);
+            if (categoryIndex > 0) pStmt.setString(categoryIndex, category);
+            if (titleIndex > 0) pStmt.setString(titleIndex, title);
+            if (pressIndex > 0) pStmt.setString(pressIndex, press);
+            if (authorIndex > 0) pStmt.setString(authorIndex, author);
             pStmt.setString(index++, conditions.getSortBy().getValue());
             pStmt.setString(index++, conditions.getSortOrder().getValue());
             rSet = pStmt.executeQuery();
