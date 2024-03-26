@@ -1,7 +1,6 @@
 import entities.Book;
 import entities.Borrow;
 import entities.Card;
-import entities.Card.CardType;
 import queries.*;
 import utils.DBInitializer;
 import utils.DatabaseConnector;
@@ -358,12 +357,124 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
 
     @Override
     public ApiResult borrowBook(Borrow borrow) {
-        return new ApiResult(false, "Unimplemented Function");
+        Connection conn = connector.getConn();
+        PreparedStatement pStmt = null;
+        ResultSet rSet = null;
+        try {
+            int cardId = borrow.getCardId();
+            int bookId = borrow.getBookId();
+            long borrowTime = borrow.getBorrowTime();
+
+            String bookCheck = "SELECT * FROM book WHERE book_id = ? AND stock > 0";
+            pStmt = conn.prepareStatement(bookCheck);
+            pStmt.setInt(1, bookId);
+            rSet = pStmt.executeQuery();
+            if (!rSet.next()) {
+                return new ApiResult(false, "Insufficient or non-existent books.");
+            }
+
+            String cardCheck = "SELECT * FROM card WHERE card_id = ?";
+            pStmt = conn.prepareStatement(cardCheck);
+            pStmt.setInt(1, cardId);
+            rSet = pStmt.executeQuery();
+            if (!rSet.next()) {
+                return new ApiResult(false, "Card does not exist.");
+            }
+
+            String userCheck = "SELECT * FROM borrow WHERE book_id = ? AND card_id = ? AND return_time = 0";
+            pStmt = conn.prepareStatement(userCheck);
+            pStmt.setInt(1, bookId);
+            pStmt.setInt(2, cardId);
+            rSet = pStmt.executeQuery();
+            if (rSet.next()) {
+                return new ApiResult(false, "The book has not been returned yet.");
+            }
+
+            String bookDecQuery = "UPDATE book SET stock = stock - 1 WHERE book_id = ?";
+            pStmt = conn.prepareStatement(bookDecQuery);
+            pStmt.setInt(1, bookId);
+            pStmt.executeUpdate();
+
+            String insertBorrowQuery = "INSERT INTO borrow (card_id, book_id, borrow_time) VALUES (?, ?, ?)";
+            pStmt = conn.prepareStatement(insertBorrowQuery);
+            pStmt.setInt(1, cardId);
+            pStmt.setInt(2, bookId);
+            pStmt.setLong(3, borrowTime);
+            pStmt.executeUpdate();
+
+            commit(conn);
+        } catch (Exception e) {
+            rollback(conn);
+            return new ApiResult(false, e.getMessage());
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+                if (rSet != null) {
+                    rSet.close();
+                }
+                if (pStmt != null) {
+                    pStmt.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return new ApiResult(true, null);
     }
 
     @Override
     public ApiResult returnBook(Borrow borrow) {
-        return new ApiResult(false, "Unimplemented Function");
+        Connection conn = connector.getConn();
+        PreparedStatement pStmt = null;
+        ResultSet rSet = null;
+        try {
+            int cardId = borrow.getCardId();
+            int bookId = borrow.getBookId();
+            long returnTime = borrow.getReturnTime();
+
+            String userCheck = "SELECT * FROM borrow WHERE book_id = ? AND card_id = ? AND return_time = 0";
+            pStmt = conn.prepareStatement(userCheck);
+            pStmt.setInt(1, bookId);
+            pStmt.setInt(2, cardId);
+            rSet = pStmt.executeQuery();
+            if (rSet.next()) {
+                return new ApiResult(false, "Fail to return the book.");
+            }
+
+            String bookIncQuery = "UPDATE book SET stock = stock + 1 WHERE book_id = ?";
+            pStmt = conn.prepareStatement(bookIncQuery);
+            pStmt.setInt(1, bookId);
+            pStmt.executeUpdate();
+
+            String returnQuery = "UPDATE borrow SET return_time = ? WHERE card_id = ? AND book_id = ?";
+            pStmt = conn.prepareStatement(returnQuery);
+            pStmt.setLong(1, returnTime);
+            pStmt.setInt(2, cardId);
+            pStmt.setInt(3, bookId);
+            pStmt.executeUpdate();
+
+            commit(conn);
+        } catch (Exception e) {
+            rollback(conn);
+            return new ApiResult(false, e.getMessage());
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.close();
+                }
+                if (rSet != null) {
+                    rSet.close();
+                }
+                if (pStmt != null) {
+                    pStmt.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return new ApiResult(true, null);
     }
 
     @Override
@@ -481,6 +592,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
         Connection conn = connector.getConn();
         PreparedStatement pStmt = null;
         ResultSet rSet = null;
+        CardList cardList;
         try {
             String cardQuery = "SELECT * FROM card";
             pStmt = conn.prepareStatement(cardQuery);
@@ -492,8 +604,12 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 String department = rSet.getString("department");
                 String tmptype = rSet.getString("type");
                 Card.CardType type = Card.CardType.values(tmptype);
-
+                Card card = new Card(cardId, name, department, type);
+                cards.add(card);
             }
+            cardList = new CardList(cards);
+
+            commit(conn);
         } catch (Exception e) {
             rollback(conn);
             return new ApiResult(false, e.getMessage());
@@ -512,7 +628,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 e.printStackTrace();
             }
         }
-        return new ApiResult(true, null);
+        return new ApiResult(true, null, cardList);
     }
 
     @Override
