@@ -327,18 +327,24 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 categoryIndex = index++;
             }
             if (title != null) {
-                selectBookQuery += " AND title = ?";
+                selectBookQuery += " AND title LIKE ?";
+                title = "%" + title + "%";
                 titleIndex = index++;
             }
             if (press != null) {
-                selectBookQuery += " AND press = ?";
+                selectBookQuery += " AND press LIKE ?";
+                press = "%" + press + "%";
                 pressIndex = index++;
             }
             if (author != null) {
-                selectBookQuery += " AND author = ?";
+                selectBookQuery += " AND author LIKE ?";
+                author = "%" + author + "%";
                 authorIndex = index++;
             }
-            selectBookQuery += " ORDER BY ? ?";
+            selectBookQuery += " ORDER BY " + conditions.getSortBy().getValue() + " " + conditions.getSortOrder().getValue();
+            if (conditions.getSortBy().getValue() != "book_id") {
+                selectBookQuery += ", book_id ASC";
+            }
             pStmt = conn.prepareStatement(selectBookQuery);
             pStmt.setInt(1, minPublishYear);
             pStmt.setInt(2, maxPublishYear);
@@ -348,8 +354,6 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             if (titleIndex > 0) pStmt.setString(titleIndex, title);
             if (pressIndex > 0) pStmt.setString(pressIndex, press);
             if (authorIndex > 0) pStmt.setString(authorIndex, author);
-            pStmt.setString(index++, conditions.getSortBy().getValue());
-            pStmt.setString(index++, conditions.getSortOrder().getValue());
             rSet = pStmt.executeQuery();
 
             List<Book> books = new ArrayList<Book>();
