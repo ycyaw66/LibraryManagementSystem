@@ -401,23 +401,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             int bookId = borrow.getBookId();
             long borrowTime = borrow.getBorrowTime();
 
-            String bookCheck = "SELECT * FROM book WHERE book_id = ? AND stock > 0";
-            pStmt = conn.prepareStatement(bookCheck);
-            pStmt.setInt(1, bookId);
-            rSet = pStmt.executeQuery();
-            if (!rSet.next()) {
-                return new ApiResult(false, "Insufficient or non-existent books.");
-            }
-
-            String cardCheck = "SELECT * FROM card WHERE card_id = ?";
-            pStmt = conn.prepareStatement(cardCheck);
-            pStmt.setInt(1, cardId);
-            rSet = pStmt.executeQuery();
-            if (!rSet.next()) {
-                return new ApiResult(false, "Card does not exist.");
-            }
-
-            String userCheck = "SELECT * FROM borrow WHERE book_id = ? AND card_id = ? AND return_time = 0 FOR UPDATE";
+            String userCheck = "SELECT * FROM borrow WHERE book_id = ? AND card_id = ? AND return_time = 0";
             pStmt = conn.prepareStatement(userCheck);
             pStmt.setInt(1, bookId);
             pStmt.setInt(2, cardId);
@@ -426,10 +410,14 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 return new ApiResult(false, "The book has not been returned yet.");
             }
 
-            String bookDecQuery = "UPDATE book SET stock = stock - 1 WHERE book_id = ?";
+            String bookDecQuery = "UPDATE book SET stock = stock - 1 WHERE book_id = ? AND stock > 0";
             pStmt = conn.prepareStatement(bookDecQuery);
             pStmt.setInt(1, bookId);
-            pStmt.executeUpdate();
+            int affectedRows = pStmt.executeUpdate();
+            if (affectedRows == 0) {
+                rollback(conn);
+                return new ApiResult(false, "Insufficient book");
+            }
 
             String insertBorrowQuery = "INSERT INTO borrow (card_id, book_id, borrow_time, return_time) VALUES (?, ?, ?, 0)";
             pStmt = conn.prepareStatement(insertBorrowQuery);
