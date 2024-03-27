@@ -417,7 +417,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 return new ApiResult(false, "Card does not exist.");
             }
 
-            String userCheck = "SELECT * FROM borrow WHERE book_id = ? AND card_id = ? AND return_time = 0";
+            String userCheck = "SELECT * FROM borrow WHERE book_id = ? AND card_id = ? AND return_time = 0 FOR UPDATE";
             pStmt = conn.prepareStatement(userCheck);
             pStmt.setInt(1, bookId);
             pStmt.setInt(2, cardId);
