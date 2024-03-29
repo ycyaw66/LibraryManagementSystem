@@ -3,6 +3,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+
+import org.json.JSONObject;
+
 import com.sun.net.httpserver.*;
 
 import utils.ConnectConfig;
@@ -44,18 +47,19 @@ public class BookHandler implements HttpHandler {
         headers.add("Access-Control-Allow-Origin", "*");
         headers.add("Access-Control-Allow-Methods", "GET, POST");
         headers.add("Access-Control-Allow-Headers", "Content-Type");
-        // 解析请求的方法，看GET还是POST
+        
         String requestMethod = exchange.getRequestMethod();
-        // 注意判断要用equals方法而不是==啊，java的小坑（
+
         if (requestMethod.equals("GET")) {
-            // 处理GET
             handleGetRequest(exchange);
         } else if (requestMethod.equals("POST")) {
-            // 处理POST
             handlePostRequest(exchange);
+        } else if (requestMethod.equals("PUT")) {
+            handlePutRequest(exchange);
+        } else if (requestMethod.equals("DELETE")) {
+            handleDeleteRequest(exchange);
         } else if (requestMethod.equals("OPTIONS")) {
-            // 处理OPTIONS
-            // handleOptionsRequest(exchange);
+            exchange.sendResponseHeaders(204, -1);
         } else {
             // 其他请求返回405 Method Not Allowed
             exchange.sendResponseHeaders(405, -1);
@@ -63,38 +67,24 @@ public class BookHandler implements HttpHandler {
     }
 
     private void handleGetRequest(HttpExchange exchange) throws IOException {
+        String response = "";
+        
         // 响应头，因为是JSON通信
         exchange.getResponseHeaders().set("Content-Type", "application/json");
         // 状态码为200，也就是status ok
         exchange.sendResponseHeaders(200, 0);
         // 获取输出流，java用流对象来进行io操作
         OutputStream outputStream = exchange.getResponseBody();
-        // 构建JSON响应数据，这里简化为字符串
         
-        String response = "";
-        // 写
         outputStream.write(response.getBytes());
-        // 流一定要close！！！小心泄漏
         outputStream.close();
     }
 
     private void handlePostRequest(HttpExchange exchange) throws IOException {
-        // 读取POST请求体
-        InputStream requestBody = exchange.getRequestBody();
-        // 用这个请求体（输入流）构造个buffered reader
-        BufferedReader reader = new BufferedReader(new InputStreamReader(requestBody));
-        // 拼字符串的
-        StringBuilder requestBodyBuilder = new StringBuilder();
-        // 用来读的
-        String line;
-        // 没读完，一直读，拼到string builder里
-        while ((line = reader.readLine()) != null) {
-            requestBodyBuilder.append(line);
-        }
+        String request = parseRequestBody(exchange);
+        JSONObject jsonObject = new JSONObject(request);
 
-        // 看看读到了啥
-        // 实际处理可能会更复杂点
-        System.out.println("Received POST request to create card with data: " + requestBodyBuilder.toString());
+        System.out.println("Received POST request with data: " + request);
 
         // 响应头
         exchange.getResponseHeaders().set("Content-Type", "text/plain");
@@ -105,5 +95,26 @@ public class BookHandler implements HttpHandler {
         OutputStream outputStream = exchange.getResponseBody();
         outputStream.write("Card created successfully".getBytes());
         outputStream.close();
+    }
+
+    private String parseRequestBody(HttpExchange exchange) throws IOException {
+        InputStream requestBodyStream = exchange.getRequestBody();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(requestBodyStream));
+        StringBuilder requestBodyBuilder = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            requestBodyBuilder.append(line);
+        }
+        return requestBodyBuilder.toString();
+    }
+
+    private void handlePutRequest(HttpExchange exchange) throws IOException {
+        // 处理 PUT 请求的逻辑，暂未实现
+        exchange.sendResponseHeaders(501, -1); // 501 Not Implemented
+    }
+    
+    private void handleDeleteRequest(HttpExchange exchange) throws IOException {
+        // 处理 DELETE 请求的逻辑，暂未实现
+        exchange.sendResponseHeaders(501, -1); // 501 Not Implemented
     }
 }

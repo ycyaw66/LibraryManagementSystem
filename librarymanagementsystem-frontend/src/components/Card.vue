@@ -173,9 +173,8 @@ export default {
     },
     methods: {
         ConfirmNewCard() {
-            // 发出POST请求
             axios.post("/card",
-                { // 请求体
+                {
                     name: this.newCardInfo.name,
                     department: this.newCardInfo.department,
                     type: this.newCardInfo.type
