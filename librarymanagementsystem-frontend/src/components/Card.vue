@@ -180,9 +180,12 @@ export default {
                     type: this.newCardInfo.type
                 })
                 .then(response => {
-                    ElMessage.success("借书证新建成功") // 显示消息提醒
+                    ElMessage.success(response.data) // 显示消息提醒
                     this.newCardVisible = false // 将对话框设置为不可见
                     this.QueryCards() // 重新查询借书证以刷新页面
+                })
+                .catch(error => {
+                    ElMessage.error(error.response.data)
                 })
         },
         ConfirmModifyCard() {
@@ -194,13 +197,29 @@ export default {
                     type: this.toModifyInfo.type
                 })
                 .then(response => {
-                    ElMessage.success("借书证修改成功")
+                    ElMessage.success(response.data)
                     this.modifyCardVisible = false
                     this.QueryCards()
                 })
+                .catch(error => {
+                    ElMessage.error(error.response.data)
+                })
         },
         ConfirmRemoveCard() {
-            // TODO: YOUR CODE HERE
+            axios.delete("/card",
+                {
+                    data: {
+                        id: this.toRemove
+                    }
+                })
+                .then(response => {
+                    ElMessage.success(response.data)
+                    this.removeCardVisible = false
+                    this.QueryCards()
+                })
+                .catch(error => {
+                    ElMessage.error(error.response.data)
+                })
         },
         QueryCards() {
             this.cards = [] // 清空列表
@@ -210,6 +229,9 @@ export default {
                     cards.forEach(card => { // 对于每个借书证
                         this.cards.push(card) // 将其加入到列表中
                     })
+                })
+                .catch(error => {
+                    ElMessage.error(error.response.data)
                 })
         }
     },

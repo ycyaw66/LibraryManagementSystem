@@ -69,11 +69,19 @@ public class CardHandler implements HttpHandler {
     private void handleGetRequest(HttpExchange exchange) throws IOException {
         try {
             ApiResult result = library.showCards();
+            if (result.ok == false) {
+                exchange.getResponseHeaders().set("Content-Type", "text/plain");
+                exchange.sendResponseHeaders(400, 0);
+                OutputStream outputStream = exchange.getResponseBody();
+                outputStream.write(result.message.getBytes());
+                outputStream.close();
+                return;
+            }
             CardList resCardList = (CardList) result.payload;
             String response = "";
             for (int i = 0; i < resCardList.getCount(); i++) {
                 Card card = resCardList.getCards().get(i);
-    
+                
                 String type = card.getType().getStr();
                 if (type.equals("S")) type = "学生";
                 else type = "教师";
@@ -116,17 +124,25 @@ public class CardHandler implements HttpHandler {
                 cardType = CardType.Teacher;
             }
             Card card = new Card(0, name, department, cardType);
-            library.registerCard(card);
+            ApiResult result = library.registerCard(card);
+            if (result.ok == false) {
+                exchange.getResponseHeaders().set("Content-Type", "text/plain");
+                exchange.sendResponseHeaders(400, 0);
+                OutputStream outputStream = exchange.getResponseBody();
+                outputStream.write(result.message.getBytes());
+                outputStream.close();
+                return;
+            }
             exchange.getResponseHeaders().set("Content-Type", "text/plain");
-            exchange.sendResponseHeaders(201, 0);
+            exchange.sendResponseHeaders(200, 0);
             OutputStream outputStream = exchange.getResponseBody();
-            outputStream.write("Card created successfully".getBytes());
+            outputStream.write(result.message.getBytes());
             outputStream.close();
         } catch (Exception e) {
             exchange.getResponseHeaders().set("Content-Type", "text/plain");
             exchange.sendResponseHeaders(500, 0);
             OutputStream outputStream = exchange.getResponseBody();
-            outputStream.write("Failed to create card".getBytes());
+            outputStream.write("借书证新建失败".getBytes());
             outputStream.close();
         }
     }
@@ -134,7 +150,7 @@ public class CardHandler implements HttpHandler {
     private void handlePutRequest(HttpExchange exchange) throws IOException {
         String request = parseRequestBody(exchange);
         JSONObject jsonObject = new JSONObject(request);
-        
+
         try {
             int cardId = jsonObject.getInt("id");
             String name = jsonObject.getString("name");
@@ -148,24 +164,56 @@ public class CardHandler implements HttpHandler {
                 cardType = CardType.Teacher;
             }
             Card card = new Card(cardId, name, department, cardType);
-            library.modifyCardInfo(card);
+            ApiResult result = library.modifyCardInfo(card);
+            if (result.ok == false) {
+                exchange.getResponseHeaders().set("Content-Type", "text/plain");
+                exchange.sendResponseHeaders(400, 0);
+                OutputStream outputStream = exchange.getResponseBody();
+                outputStream.write(result.message.getBytes());
+                outputStream.close();
+                return;
+            }
             exchange.getResponseHeaders().set("Content-Type", "text/plain");
-            exchange.sendResponseHeaders(201, 0);
+            exchange.sendResponseHeaders(200, 0);
             OutputStream outputStream = exchange.getResponseBody();
-            outputStream.write("Card created successfully".getBytes());
+            outputStream.write(result.message.getBytes());
             outputStream.close();
         } catch (Exception e) {
             exchange.getResponseHeaders().set("Content-Type", "text/plain");
             exchange.sendResponseHeaders(500, 0);
             OutputStream outputStream = exchange.getResponseBody();
-            outputStream.write("Failed to create card".getBytes());
+            outputStream.write("借书证修改失败".getBytes());
             outputStream.close();
         }
     }
     
     private void handleDeleteRequest(HttpExchange exchange) throws IOException {
-        // 处理 DELETE 请求的逻辑，暂未实现
-        exchange.sendResponseHeaders(501, -1); // 501 Not Implemented
+        String request = parseRequestBody(exchange);
+        JSONObject jsonObject = new JSONObject(request);
+
+        try {
+            int cardId = jsonObject.getInt("id");
+            ApiResult result = library.removeCard(cardId);
+            if (result.ok == false) {
+                exchange.getResponseHeaders().set("Content-Type", "text/plain");
+                exchange.sendResponseHeaders(400, 0);
+                OutputStream outputStream = exchange.getResponseBody();
+                outputStream.write(result.message.getBytes());
+                outputStream.close();
+                return;
+            }
+            exchange.getResponseHeaders().set("Content-Type", "text/plain");
+            exchange.sendResponseHeaders(200, 0);
+            OutputStream outputStream = exchange.getResponseBody();
+            outputStream.write(result.message.getBytes());
+            outputStream.close();
+        } catch (Exception e) {
+            exchange.getResponseHeaders().set("Content-Type", "text/plain");
+            exchange.sendResponseHeaders(500, 0);
+            OutputStream outputStream = exchange.getResponseBody();
+            outputStream.write("借书证删除失败".getBytes());
+            outputStream.close();
+        }
     }
 
     private String parseRequestBody(HttpExchange exchange) throws IOException {

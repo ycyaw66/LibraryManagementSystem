@@ -575,7 +575,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setString(3, type);
             rSet = pStmt.executeQuery();
             if (rSet.next()) {
-                return new ApiResult(false, "Already exist a same card.");
+                return new ApiResult(false, "借书证新建失败：存在相同借书证");
             }
 
             String storeCardQuery = "INSERT INTO card (name, department, type) VALUES (?, ?, ?)";
@@ -607,7 +607,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 e.printStackTrace();
             }
         }
-        return new ApiResult(true, null);
+        return new ApiResult(true, "借书证新建成功");
     }
 
     @Override
@@ -621,7 +621,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setInt(1, card.getCardId());
             rSet = pStmt.executeQuery();
             if (!rSet.next()) {
-                return new ApiResult(false, "Card not found.");
+                return new ApiResult(false, "不存在该借书证");
             }
 
             String modifyCardInfoQuery = "UPDATE card SET name = ?, department = ?, type = ? WHERE card_id = ?";
@@ -648,7 +648,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 e.printStackTrace();
             }
         }
-        return new ApiResult(true, null);
+        return new ApiResult(true, "借书证修改成功");
     }
 
     @Override
@@ -662,7 +662,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setInt(1, cardId);
             rSet = pStmt.executeQuery();
             if (rSet.next()) {
-                return new ApiResult(false, "The card has unreturned books.");
+                return new ApiResult(false, "借书证删除失败：有未归还的图书");
             }
 
             String cardExistCheck = "SELECT * FROM card WHERE card_id = ?";
@@ -670,7 +670,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setInt(1, cardId);
             rSet = pStmt.executeQuery();
             if (!rSet.next()) {
-                return new ApiResult(false, "Card not found.");
+                return new ApiResult(false, "不存在该借书证");
             }
 
             String removeBookQuery = "DELETE FROM card WHERE card_id = ?";
@@ -694,7 +694,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 e.printStackTrace();
             }
         }
-        return new ApiResult(true, null);
+        return new ApiResult(true, "借书证删除成功");
     }
 
     @Override
