@@ -10,7 +10,7 @@
         </div>
 
         <!-- 查询框 -->
-        <div style="width:30%;margin:0 auto; padding-top:5vh;">
+        <div style="width:30%; margin:0 auto; padding-top:5vh;">
 
             <el-input v-model="this.toQuery" style="display:inline; " placeholder="输入借书证ID"></el-input>
             <el-button style="margin-left: 10px;" type="primary" @click="QueryBorrows">查询</el-button>
