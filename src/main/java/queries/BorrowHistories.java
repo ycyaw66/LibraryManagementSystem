@@ -3,6 +3,8 @@ package queries;
 import entities.Book;
 import entities.Borrow;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 public class BorrowHistories {
@@ -128,6 +130,19 @@ public class BorrowHistories {
 
         public void setReturnTime(long returnTime) {
             this.returnTime = returnTime;
+        }
+
+        public String transBorrowTime() {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Date date = new Date(borrowTime);
+            return sdf.format(date);
+        }
+
+        public String transReturnTime() {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Date date = new Date(returnTime);
+            if (returnTime == 0) return "未归还";
+            return sdf.format(date);
         }
     }
 

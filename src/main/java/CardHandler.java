@@ -66,23 +66,17 @@ public class CardHandler implements HttpHandler {
     }
 
     private void handleGetRequest(HttpExchange exchange) throws IOException {
-        // 响应头，因为是JSON通信
-        exchange.getResponseHeaders().set("Content-Type", "application/json");
-        // 状态码为200，也就是status ok
-        exchange.sendResponseHeaders(200, 0);
-        // 获取输出流，java用流对象来进行io操作
-        OutputStream outputStream = exchange.getResponseBody();
-        // 构建JSON响应数据，这里简化为字符串
-
         ApiResult result = library.showCards();
         CardList resCardList = (CardList) result.payload;
         String response = "";
         System.out.println(response);
         for (int i = 0; i < resCardList.getCount(); i++) {
             Card card = resCardList.getCards().get(i);
+
             String type = card.getType().getStr();
-            if(type == "S") type = "Student";
-            else type = "Teacher";
+            if(type == "S") type = "学生";
+            else type = "教师";
+            
             String cardInfo = "{\"id\": " + card.getCardId() + ", \"name\": \"" + card.getName() + "\", \"department\": \"" + card.getDepartment() + "\", \"type\": \"" + type + "\"}";
             if (i > 0) {
                 cardInfo = "," + cardInfo;
@@ -90,6 +84,13 @@ public class CardHandler implements HttpHandler {
             response += cardInfo;
         }
         response = "[" + response + "]";
+        
+        // 响应头，因为是JSON通信
+        exchange.getResponseHeaders().set("Content-Type", "application/json");
+        // 状态码为200，也就是status ok
+        exchange.sendResponseHeaders(200, 0);
+        // 获取输出流，java用流对象来进行io操作
+        OutputStream outputStream = exchange.getResponseBody();
         // 写
         outputStream.write(response.getBytes());
         // 流一定要close！！！小心泄漏
