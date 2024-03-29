@@ -77,9 +77,8 @@
         </el-dialog>
 
 
-        <!-- 修改信息对话框 -->   
-        <el-dialog v-model="modifyCardVisible" :title="'修改信息(借书证ID: ' + this.toModifyInfo.id + ')'" width="30%"
-            align-center>
+        <!-- 修改信息对话框 -->
+        <el-dialog v-model="modifyCardVisible" :title="'修改信息(借书证ID: ' + this.toModifyInfo.id + ')'" width="30%" align-center>
             <div style="margin-left: 2vw; font-weight: bold; font-size: 1rem; margin-top: 20px; ">
                 姓名：
                 <el-input v-model="toModifyInfo.name" style="width: 12.5vw;" clearable />
