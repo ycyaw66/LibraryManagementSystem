@@ -611,6 +611,47 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
     }
 
     @Override
+    public ApiResult modifyCardInfo(Card card) {
+        Connection conn = connector.getConn();
+        PreparedStatement pStmt = null;
+        ResultSet rSet = null;
+        try {
+            String cardExistCheck = "SELECT * FROM card WHERE card_id = ?";
+            pStmt = conn.prepareStatement(cardExistCheck);
+            pStmt.setInt(1, card.getCardId());
+            rSet = pStmt.executeQuery();
+            if (!rSet.next()) {
+                return new ApiResult(false, "Card not found.");
+            }
+
+            String modifyCardInfoQuery = "UPDATE card SET name = ?, department = ?, type = ? WHERE card_id = ?";
+            pStmt = conn.prepareStatement(modifyCardInfoQuery);
+            pStmt.setString(1, card.getName());
+            pStmt.setString(2, card.getDepartment());
+            pStmt.setString(3, card.getType().getStr());
+            pStmt.setInt(4, card.getCardId());
+            pStmt.executeUpdate();
+
+            commit(conn);
+        } catch (Exception e) {
+            rollback(conn);
+            return new ApiResult(false, e.getMessage());
+        } finally {
+            try {
+                if (rSet != null) {
+                    rSet.close();
+                }
+                if (pStmt != null) {
+                    pStmt.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return new ApiResult(true, null);
+    }
+
+    @Override
     public ApiResult removeCard(int cardId) {
         Connection conn = connector.getConn();
         PreparedStatement pStmt = null;

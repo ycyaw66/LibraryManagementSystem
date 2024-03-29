@@ -131,6 +131,43 @@ public class CardHandler implements HttpHandler {
         }
     }
 
+    private void handlePutRequest(HttpExchange exchange) throws IOException {
+        String request = parseRequestBody(exchange);
+        JSONObject jsonObject = new JSONObject(request);
+        
+        try {
+            int cardId = jsonObject.getInt("id");
+            String name = jsonObject.getString("name");
+            String department = jsonObject.getString("department");
+            String type = jsonObject.getString("type");
+            CardType cardType = null;
+            if (type.equals("学生")) {
+                cardType = CardType.Student;
+            }
+            else {
+                cardType = CardType.Teacher;
+            }
+            Card card = new Card(cardId, name, department, cardType);
+            library.modifyCardInfo(card);
+            exchange.getResponseHeaders().set("Content-Type", "text/plain");
+            exchange.sendResponseHeaders(201, 0);
+            OutputStream outputStream = exchange.getResponseBody();
+            outputStream.write("Card created successfully".getBytes());
+            outputStream.close();
+        } catch (Exception e) {
+            exchange.getResponseHeaders().set("Content-Type", "text/plain");
+            exchange.sendResponseHeaders(500, 0);
+            OutputStream outputStream = exchange.getResponseBody();
+            outputStream.write("Failed to create card".getBytes());
+            outputStream.close();
+        }
+    }
+    
+    private void handleDeleteRequest(HttpExchange exchange) throws IOException {
+        // 处理 DELETE 请求的逻辑，暂未实现
+        exchange.sendResponseHeaders(501, -1); // 501 Not Implemented
+    }
+
     private String parseRequestBody(HttpExchange exchange) throws IOException {
         InputStream requestBodyStream = exchange.getRequestBody();
         BufferedReader reader = new BufferedReader(new InputStreamReader(requestBodyStream));
@@ -140,15 +177,5 @@ public class CardHandler implements HttpHandler {
             requestBodyBuilder.append(line);
         }
         return requestBodyBuilder.toString();
-    }
-
-    private void handlePutRequest(HttpExchange exchange) throws IOException {
-        // 处理 PUT 请求的逻辑，暂未实现
-        exchange.sendResponseHeaders(501, -1); // 501 Not Implemented
-    }
-    
-    private void handleDeleteRequest(HttpExchange exchange) throws IOException {
-        // 处理 DELETE 请求的逻辑，暂未实现
-        exchange.sendResponseHeaders(501, -1); // 501 Not Implemented
     }
 }

@@ -186,7 +186,18 @@ export default {
                 })
         },
         ConfirmModifyCard() {
-            // TODO: YOUR CODE HERE
+            axios.put("/card",
+                {
+                    id: this.toModifyInfo.id,
+                    name: this.toModifyInfo.name,
+                    department: this.toModifyInfo.department,
+                    type: this.toModifyInfo.type
+                })
+                .then(response => {
+                    ElMessage.success("借书证修改成功")
+                    this.modifyCardVisible = false
+                    this.QueryCards()
+                })
         },
         ConfirmRemoveCard() {
             // TODO: YOUR CODE HERE
