@@ -30,6 +30,7 @@ public class Main {
             server.createContext("/book", new BookHandler());
             server.createContext("/card", new CardHandler());
             server.createContext("/borrow", new BorrowHandler());
+            server.createContext("/return", new ReturnHandler());
             server.start();
             System.out.println("Server is listening on port 8000");
             

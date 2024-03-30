@@ -43,7 +43,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setString(5, author);
             rSet = pStmt.executeQuery();
             if (rSet.next()) {
-                return new ApiResult(false, "图书新建失败：存在相同图书");
+                return new ApiResult(false, "图书添加失败：存在相同图书");
             }
 
             String storeBookQuery = "INSERT INTO book (category, title, press, publish_year, author, price, stock) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -80,7 +80,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 e.printStackTrace();
             }
         }
-        return new ApiResult(true, "图书新建成功");
+        return new ApiResult(true, "图书添加成功");
     }
 
     @Override
@@ -99,11 +99,11 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 currentStock = rSet.getInt("stock");
             }
             else {
-                return new ApiResult(false, "Book not found.");
+                return new ApiResult(false, "库存修改失败：图书不存在");
             }
 
             if (currentStock + deltaStock < 0) {
-                return new ApiResult(false, "Insufficient stock.");
+                return new ApiResult(false, "库存修改失败：库存为负");
             }
 
             String incBookStockQuery = "UPDATE book SET stock = stock + ? WHERE book_id = ?";
@@ -129,7 +129,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 e.printStackTrace();
             }
         }
-        return new ApiResult(true, null);
+        return new ApiResult(true, "库存修改成功");
     }
 
     @Override
@@ -164,7 +164,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
 
                 if (rSet.next()) {
                     rollback(conn);
-                    return new ApiResult(false, "Already exist a same book.");
+                    return new ApiResult(false, "图书添加失败：存在相同图书");
                 }
 
                 pStmt_i.setString(1, category);
@@ -204,7 +204,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 e.printStackTrace();
             }
         }
-        return new ApiResult(true, null);
+        return new ApiResult(true, "图书添加成功");
     }
 
     @Override
@@ -218,7 +218,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setInt(1, bookId);
             rSet = pStmt.executeQuery();
             if (rSet.next()) {
-                return new ApiResult(false, "Book has been borrowed.");
+                return new ApiResult(false, "图书删除失败：图书处于出借状态");
             }
 
             String bookExistCheck = "SELECT * FROM book WHERE book_id = ?";
@@ -226,7 +226,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setInt(1, bookId);
             rSet = pStmt.executeQuery();
             if (!rSet.next()) {
-                return new ApiResult(false, "Book not found.");
+                return new ApiResult(false, "图书删除失败：图书不存在");
             }
 
             String removeBookQuery = "DELETE FROM book WHERE book_id = ?";
@@ -250,7 +250,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 e.printStackTrace();
             }
         }
-        return new ApiResult(true, null);
+        return new ApiResult(true, "图书删除成功");
     }
 
     @Override
@@ -264,7 +264,20 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setInt(1, book.getBookId());
             rSet = pStmt.executeQuery();
             if (!rSet.next()) {
-                return new ApiResult(false, "Book not found.");
+                return new ApiResult(false, "图书修改失败：图书不存在");
+            }
+
+            String sameBookCheck = "SELECT * FROM book WHERE category = ? AND title = ? AND press = ? AND publish_year = ? AND author = ? AND book_id <> ?";
+            pStmt = conn.prepareStatement(sameBookCheck);
+            pStmt.setString(1, book.getCategory());
+            pStmt.setString(2, book.getTitle());
+            pStmt.setString(3, book.getPress());
+            pStmt.setInt(4, book.getPublishYear());
+            pStmt.setString(5, book.getAuthor());
+            pStmt.setInt(6, book.getBookId());
+            rSet = pStmt.executeQuery();
+            if (rSet.next()) {
+                return new ApiResult(false, "图书修改失败：存在相同图书");
             }
 
             String modifyBookInfoQuery = "UPDATE book SET category = ?, title = ?, press = ?, publish_year = ?, author = ?, price = ? WHERE book_id = ?";
@@ -294,7 +307,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 e.printStackTrace();
             }
         }
-        return new ApiResult(true, null);
+        return new ApiResult(true, "图书修改成功");
     }
 
     @Override
@@ -407,7 +420,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setInt(2, cardId);
             rSet = pStmt.executeQuery();
             if (rSet.next()) {
-                return new ApiResult(false, "The book has not been returned yet.");
+                return new ApiResult(false, "借书失败：该书尚未归还");
             }
 
             String bookDecQuery = "UPDATE book SET stock = stock - 1 WHERE book_id = ? AND stock > 0";
@@ -416,7 +429,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             int affectedRows = pStmt.executeUpdate();
             if (affectedRows == 0) {
                 rollback(conn);
-                return new ApiResult(false, "Insufficient book");
+                return new ApiResult(false, "借书失败：库存不足");
             }
 
             String insertBorrowQuery = "INSERT INTO borrow (card_id, book_id, borrow_time, return_time) VALUES (?, ?, ?, 0)";
@@ -442,7 +455,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 e.printStackTrace();
             }
         }
-        return new ApiResult(true, null);
+        return new ApiResult(true, "借书成功");
     }
 
     @Override
@@ -465,10 +478,10 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 borrowTime = rSet.getLong("borrow_time");
             }
             else {
-                return new ApiResult(false, "Fail to return the book.");
+                return new ApiResult(false, "还书失败：图书/借书证不存在或无需归还该书");
             }
             if (borrowTime >= returnTime) {
-                return new ApiResult(false, "Fail to return the book.");
+                return new ApiResult(false, "还书失败：还书时间早于借书时间");
             }
 
             String bookIncQuery = "UPDATE book SET stock = stock + 1 WHERE book_id = ?";
@@ -499,7 +512,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 e.printStackTrace();
             }
         }
-        return new ApiResult(true, null);
+        return new ApiResult(true, "还书成功");
     }
 
     @Override

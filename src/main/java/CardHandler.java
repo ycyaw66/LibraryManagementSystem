@@ -103,7 +103,7 @@ public class CardHandler implements HttpHandler {
             exchange.getResponseHeaders().set("Content-Type", "text/plain");
             exchange.sendResponseHeaders(500, 0);
             OutputStream outputStream = exchange.getResponseBody();
-            outputStream.write("Failed to retrieve cards".getBytes());
+            outputStream.write("查询失败".getBytes());
             outputStream.close();
         }
     }
@@ -142,7 +142,7 @@ public class CardHandler implements HttpHandler {
             exchange.getResponseHeaders().set("Content-Type", "text/plain");
             exchange.sendResponseHeaders(500, 0);
             OutputStream outputStream = exchange.getResponseBody();
-            outputStream.write("借书证新建失败".getBytes());
+            outputStream.write("新建失败".getBytes());
             outputStream.close();
         }
     }
@@ -182,7 +182,7 @@ public class CardHandler implements HttpHandler {
             exchange.getResponseHeaders().set("Content-Type", "text/plain");
             exchange.sendResponseHeaders(500, 0);
             OutputStream outputStream = exchange.getResponseBody();
-            outputStream.write("借书证修改失败".getBytes());
+            outputStream.write("修改失败".getBytes());
             outputStream.close();
         }
     }
@@ -211,7 +211,7 @@ public class CardHandler implements HttpHandler {
             exchange.getResponseHeaders().set("Content-Type", "text/plain");
             exchange.sendResponseHeaders(500, 0);
             OutputStream outputStream = exchange.getResponseBody();
-            outputStream.write("借书证删除失败".getBytes());
+            outputStream.write("删除失败".getBytes());
             outputStream.close();
         }
     }

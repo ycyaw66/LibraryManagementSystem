@@ -53,14 +53,12 @@ public class BookHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        // 允许所有域的请求，cors处理
         Headers headers = exchange.getResponseHeaders();
         headers.add("Access-Control-Allow-Origin", "*");
-        headers.add("Access-Control-Allow-Methods", "GET, POST");
+        headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
         headers.add("Access-Control-Allow-Headers", "Content-Type");
         
         String requestMethod = exchange.getRequestMethod();
-
         if (requestMethod.equals("GET")) {
             handleGetRequest(exchange);
         } else if (requestMethod.equals("POST")) {
@@ -72,7 +70,6 @@ public class BookHandler implements HttpHandler {
         } else if (requestMethod.equals("OPTIONS")) {
             exchange.sendResponseHeaders(204, -1);
         } else {
-            // 其他请求返回405 Method Not Allowed
             exchange.sendResponseHeaders(405, -1);
         }
     }
@@ -114,7 +111,7 @@ public class BookHandler implements HttpHandler {
             for (int i = 0; i < resBookList.size(); i++) {
                 Book book = resBookList.get(i);
     
-                String bookInfo = "{\"bookID\": " + book.getBookId() + ", \"category\": \"" + book.getCategory() + "\", \"title\": \"" + book.getTitle() + "\", \"press\": \"" + book.getPress() + "\", \"publishYear\": " + book.getPublishYear() + ", \"author\": \"" + book.getAuthor() + "\", \"price\": " + book.getPrice() + ", \"stock\": " + book.getStock() + "}";
+                String bookInfo = "{\"book_id\": " + book.getBookId() + ", \"category\": \"" + book.getCategory() + "\", \"title\": \"" + book.getTitle() + "\", \"press\": \"" + book.getPress() + "\", \"publishYear\": " + book.getPublishYear() + ", \"author\": \"" + book.getAuthor() + "\", \"price\": " + book.getPrice() + ", \"stock\": " + book.getStock() + "}";
                 if (i > 0) {
                     bookInfo = "," + bookInfo;
                 }
@@ -130,7 +127,7 @@ public class BookHandler implements HttpHandler {
             exchange.getResponseHeaders().set("Content-Type", "text/plain");
             exchange.sendResponseHeaders(500, 0);
             OutputStream outputStream = exchange.getResponseBody();
-            outputStream.write("Failed to retrieve cards".getBytes());
+            outputStream.write("查询失败".getBytes());
             outputStream.close();
         }
     }
@@ -166,30 +163,92 @@ public class BookHandler implements HttpHandler {
             exchange.getResponseHeaders().set("Content-Type", "text/plain");
             exchange.sendResponseHeaders(500, 0);
             OutputStream outputStream = exchange.getResponseBody();
-            outputStream.write("图书新建失败".getBytes());
+            outputStream.write("新建失败".getBytes());
             outputStream.close();
         }
     }
 
-    private String parseRequestBody(HttpExchange exchange) throws IOException {
-        InputStream requestBodyStream = exchange.getRequestBody();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(requestBodyStream));
-        StringBuilder requestBodyBuilder = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            requestBodyBuilder.append(line);
-        }
-        return requestBodyBuilder.toString();
-    }
-
     private void handlePutRequest(HttpExchange exchange) throws IOException {
-        // 处理 PUT 请求的逻辑，暂未实现
-        exchange.sendResponseHeaders(501, -1); // 501 Not Implemented
+        String request = parseRequestBody(exchange);
+        JSONObject jsonObject = new JSONObject(request);
+        try {
+            int bookId = jsonObject.getInt("book_id");
+            String category = jsonObject.getString("category");
+            String title = jsonObject.getString("title");
+            String author = jsonObject.getString("author");
+            String press = jsonObject.getString("press");
+            int publishYear = jsonObject.getInt("publishYear");
+            double price = jsonObject.getDouble("price");
+            int stock = jsonObject.getInt("stock");
+            if (stock == -100000000) {
+                Book book = new Book(category, title, press, publishYear, author, price, stock);
+                book.setBookId(bookId);
+                ApiResult result = library.modifyBookInfo(book);
+                if (result.ok == false) {
+                    exchange.getResponseHeaders().set("Content-Type", "text/plain");
+                    exchange.sendResponseHeaders(400, 0);
+                    OutputStream outputStream = exchange.getResponseBody();
+                    outputStream.write(result.message.getBytes());
+                    outputStream.close();
+                    return;
+                }
+                exchange.getResponseHeaders().set("Content-Type", "text/plain");
+                exchange.sendResponseHeaders(200, 0);
+                OutputStream outputStream = exchange.getResponseBody();
+                outputStream.write(result.message.getBytes());
+                outputStream.close();
+            }
+            else {
+                ApiResult result = library.incBookStock(bookId, stock);
+                if (result.ok == false) {
+                    exchange.getResponseHeaders().set("Content-Type", "text/plain");
+                    exchange.sendResponseHeaders(400, 0);
+                    OutputStream outputStream = exchange.getResponseBody();
+                    outputStream.write(result.message.getBytes());
+                    outputStream.close();
+                    return;
+                }
+                exchange.getResponseHeaders().set("Content-Type", "text/plain");
+                exchange.sendResponseHeaders(200, 0);
+                OutputStream outputStream = exchange.getResponseBody();
+                outputStream.write(result.message.getBytes());
+                outputStream.close();
+            }
+        } catch (Exception e) {
+            exchange.getResponseHeaders().set("Content-Type", "text/plain");
+            exchange.sendResponseHeaders(500, 0);
+            OutputStream outputStream = exchange.getResponseBody();
+            outputStream.write("修改失败".getBytes());
+            outputStream.close();
+        }
     }
     
     private void handleDeleteRequest(HttpExchange exchange) throws IOException {
-        // 处理 DELETE 请求的逻辑，暂未实现
-        exchange.sendResponseHeaders(501, -1); // 501 Not Implemented
+        String request = parseRequestBody(exchange);
+        JSONObject jsonObject = new JSONObject(request);
+        try {
+            int bookId = jsonObject.getInt("id");
+            ApiResult result = library.removeBook(bookId);
+            if (result.ok == false) {
+                exchange.getResponseHeaders().set("Content-Type", "text/plain");
+                exchange.sendResponseHeaders(400, 0);
+                OutputStream outputStream = exchange.getResponseBody();
+                outputStream.write(result.message.getBytes());
+                outputStream.close();
+                return;
+            }
+            exchange.getResponseHeaders().set("Content-Type", "text/plain");
+            exchange.sendResponseHeaders(200, 0);
+            OutputStream outputStream = exchange.getResponseBody();
+            outputStream.write(result.message.getBytes());
+            outputStream.close();
+        } catch (Exception e) {
+            exchange.getResponseHeaders().set("Content-Type", "text/plain");
+            exchange.sendResponseHeaders(500, 0);
+            OutputStream outputStream = exchange.getResponseBody();
+            outputStream.write("删除失败".getBytes());
+            outputStream.close();
+        }
     }
 
     private Map<String, String> parseQuery(String query) {
@@ -212,5 +271,16 @@ public class BookHandler implements HttpHandler {
             }
         }
         return queryParams;
+    }
+
+    private String parseRequestBody(HttpExchange exchange) throws IOException {
+        InputStream requestBodyStream = exchange.getRequestBody();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(requestBodyStream));
+        StringBuilder requestBodyBuilder = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            requestBodyBuilder.append(line);
+        }
+        return requestBodyBuilder.toString();
     }
 }
