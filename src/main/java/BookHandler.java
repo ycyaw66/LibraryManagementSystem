@@ -3,10 +3,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -260,12 +257,6 @@ public class BookHandler implements HttpHandler {
                 if (keyValue.length == 2) {
                     String key = keyValue[0];
                     String value = keyValue[1];
-                    // 对参数值进行 URL 解码
-                    try {
-                        value = URLDecoder.decode(value, StandardCharsets.UTF_8.name());
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }
                     queryParams.put(key, value);
                 }
             }
