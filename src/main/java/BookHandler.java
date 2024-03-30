@@ -94,7 +94,7 @@ public class BookHandler implements HttpHandler {
                 bookQueryConditions.setMinPrice(Double.valueOf(queryParams.get("minPrice")));
             }
             if (queryParams.get("maxPrice") != null) {
-                bookQueryConditions.setMinPrice(Double.valueOf(queryParams.get("maxPrice")));
+                bookQueryConditions.setMaxPrice(Double.valueOf(queryParams.get("maxPrice")));
             }
             ApiResult result = library.queryBook(bookQueryConditions);
             if (result.ok == false) {
