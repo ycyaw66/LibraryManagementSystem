@@ -413,6 +413,22 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             int cardId = borrow.getCardId();
             int bookId = borrow.getBookId();
             long borrowTime = borrow.getBorrowTime();
+            
+            String cardCheck = "SELECT * FROM card WHERE card_id = ?";
+            pStmt = conn.prepareStatement(cardCheck);
+            pStmt.setInt(1, cardId);
+            rSet = pStmt.executeQuery();
+            if (!rSet.next()) {
+                return new ApiResult(false, "借书失败：借书证不存在");
+            }
+
+            String bookCheck = "SELECT * FROM book WHERE book_id = ?";
+            pStmt = conn.prepareStatement(bookCheck);
+            pStmt.setInt(1, bookId);
+            rSet = pStmt.executeQuery();
+            if (!rSet.next()) {
+                return new ApiResult(false, "借书失败：该书不存在");
+            }
 
             String userCheck = "SELECT * FROM borrow WHERE book_id = ? AND card_id = ? AND return_time = 0";
             pStmt = conn.prepareStatement(userCheck);
@@ -467,6 +483,22 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             int cardId = borrow.getCardId();
             int bookId = borrow.getBookId();
             long returnTime = borrow.getReturnTime();
+            
+            String cardCheck = "SELECT * FROM card WHERE card_id = ?";
+            pStmt = conn.prepareStatement(cardCheck);
+            pStmt.setInt(1, cardId);
+            rSet = pStmt.executeQuery();
+            if (!rSet.next()) {
+                return new ApiResult(false, "还书失败：借书证不存在");
+            }
+
+            String bookCheck = "SELECT * FROM book WHERE book_id = ?";
+            pStmt = conn.prepareStatement(bookCheck);
+            pStmt.setInt(1, bookId);
+            rSet = pStmt.executeQuery();
+            if (!rSet.next()) {
+                return new ApiResult(false, "还书失败：该书不存在");
+            }
 
             String userCheck = "SELECT * FROM borrow WHERE book_id = ? AND card_id = ? AND return_time = 0";
             pStmt = conn.prepareStatement(userCheck);
@@ -478,7 +510,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 borrowTime = rSet.getLong("borrow_time");
             }
             else {
-                return new ApiResult(false, "还书失败：图书/借书证不存在或无需归还该书");
+                return new ApiResult(false, "还书失败：用户未借该书");
             }
             if (borrowTime >= returnTime) {
                 return new ApiResult(false, "还书失败：还书时间早于借书时间");
