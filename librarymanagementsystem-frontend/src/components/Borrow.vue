@@ -18,7 +18,7 @@
         </div>
 
         <!-- 结果表格 -->
-        <el-table v-if="isShow" :data="fitlerTableData" height="600"
+        <el-table v-if="isShow" :data="fitlerTableData" height="450"
             :default-sort="{ prop: 'borrowTime', order: 'ascending' }" :table-layout="'auto'"
             style="width: 100%; margin-left: 50px; margin-top: 30px; margin-right: 50px; max-width: 80vw;">
             <el-table-column prop="cardID" label="借书证ID" />
