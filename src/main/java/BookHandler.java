@@ -3,11 +3,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.json.JSONObject;
 
 import com.sun.net.httpserver.*;
 
+import entities.Book;
+import queries.ApiResult;
+import queries.BookQueryConditions;
+import queries.BookQueryResults;
 import utils.ConnectConfig;
 import utils.DatabaseConnector;
 
@@ -67,34 +78,97 @@ public class BookHandler implements HttpHandler {
     }
 
     private void handleGetRequest(HttpExchange exchange) throws IOException {
-        String response = "";
-        
-        // 响应头，因为是JSON通信
-        exchange.getResponseHeaders().set("Content-Type", "application/json");
-        // 状态码为200，也就是status ok
-        exchange.sendResponseHeaders(200, 0);
-        // 获取输出流，java用流对象来进行io操作
-        OutputStream outputStream = exchange.getResponseBody();
-        
-        outputStream.write(response.getBytes());
-        outputStream.close();
+        URI uri = exchange.getRequestURI();
+        String query = uri.getQuery();
+        Map<String, String> queryParams = parseQuery(query);
+        try {
+            BookQueryConditions bookQueryConditions = new BookQueryConditions();
+            bookQueryConditions.setCategory(queryParams.get("category"));
+            bookQueryConditions.setTitle(queryParams.get("title"));
+            bookQueryConditions.setPress(queryParams.get("press"));
+            bookQueryConditions.setAuthor(queryParams.get("author"));
+            if (queryParams.get("minPublishYear") != null) {
+                bookQueryConditions.setMinPublishYear(Integer.valueOf(queryParams.get("minPublishYear")));
+            }
+            if (queryParams.get("maxPublishYear") != null) {
+                bookQueryConditions.setMaxPublishYear(Integer.valueOf(queryParams.get("maxPublishYear")));
+            }
+            if (queryParams.get("minPrice") != null) {
+                bookQueryConditions.setMinPrice(Double.valueOf(queryParams.get("minPrice")));
+            }
+            if (queryParams.get("maxPrice") != null) {
+                bookQueryConditions.setMinPrice(Double.valueOf(queryParams.get("maxPrice")));
+            }
+            ApiResult result = library.queryBook(bookQueryConditions);
+            if (result.ok == false) {
+                exchange.getResponseHeaders().set("Content-Type", "text/plain");
+                exchange.sendResponseHeaders(400, 0);
+                OutputStream outputStream = exchange.getResponseBody();
+                outputStream.write(result.message.getBytes());
+                outputStream.close();
+                return;
+            }
+            BookQueryResults bookQueryResults = (BookQueryResults) result.payload;
+            List<Book> resBookList = bookQueryResults.getResults();
+            String response = "";
+            for (int i = 0; i < resBookList.size(); i++) {
+                Book book = resBookList.get(i);
+    
+                String bookInfo = "{\"bookID\": " + book.getBookId() + ", \"category\": \"" + book.getCategory() + "\", \"title\": \"" + book.getTitle() + "\", \"press\": \"" + book.getPress() + "\", \"publishYear\": " + book.getPublishYear() + ", \"author\": \"" + book.getAuthor() + "\", \"price\": " + book.getPrice() + ", \"stock\": " + book.getStock() + "}";
+                if (i > 0) {
+                    bookInfo = "," + bookInfo;
+                }
+                response += bookInfo;
+            }
+            response = "[" + response + "]";
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, 0);
+            OutputStream outputStream = exchange.getResponseBody();
+            outputStream.write(response.getBytes());
+            outputStream.close();
+        } catch (Exception e) {
+            exchange.getResponseHeaders().set("Content-Type", "text/plain");
+            exchange.sendResponseHeaders(500, 0);
+            OutputStream outputStream = exchange.getResponseBody();
+            outputStream.write("Failed to retrieve cards".getBytes());
+            outputStream.close();
+        }
     }
 
     private void handlePostRequest(HttpExchange exchange) throws IOException {
         String request = parseRequestBody(exchange);
         JSONObject jsonObject = new JSONObject(request);
+        try {
+            String category = jsonObject.getString("category");
+            String title = jsonObject.getString("title");
+            String author = jsonObject.getString("author");
+            String press = jsonObject.getString("press");
+            int publishYear = jsonObject.getInt("publishYear");
+            double price = jsonObject.getDouble("price");
+            int stock = jsonObject.getInt("stock");
 
-        System.out.println("Received POST request with data: " + request);
-
-        // 响应头
-        exchange.getResponseHeaders().set("Content-Type", "text/plain");
-        // 响应状态码200
-        exchange.sendResponseHeaders(200, 0);
-
-        // 剩下三个和GET一样
-        OutputStream outputStream = exchange.getResponseBody();
-        outputStream.write("Card created successfully".getBytes());
-        outputStream.close();
+            Book book = new Book(category, title, press, publishYear, author, price, stock);
+            ApiResult result = library.storeBook(book);
+            if (result.ok == false) {
+                exchange.getResponseHeaders().set("Content-Type", "text/plain");
+                exchange.sendResponseHeaders(400, 0);
+                OutputStream outputStream = exchange.getResponseBody();
+                outputStream.write(result.message.getBytes());
+                outputStream.close();
+                return;
+            }
+            exchange.getResponseHeaders().set("Content-Type", "text/plain");
+            exchange.sendResponseHeaders(200, 0);
+            OutputStream outputStream = exchange.getResponseBody();
+            outputStream.write(result.message.getBytes());
+            outputStream.close();
+        } catch (Exception e) {
+            exchange.getResponseHeaders().set("Content-Type", "text/plain");
+            exchange.sendResponseHeaders(500, 0);
+            OutputStream outputStream = exchange.getResponseBody();
+            outputStream.write("图书新建失败".getBytes());
+            outputStream.close();
+        }
     }
 
     private String parseRequestBody(HttpExchange exchange) throws IOException {
@@ -116,5 +190,27 @@ public class BookHandler implements HttpHandler {
     private void handleDeleteRequest(HttpExchange exchange) throws IOException {
         // 处理 DELETE 请求的逻辑，暂未实现
         exchange.sendResponseHeaders(501, -1); // 501 Not Implemented
+    }
+
+    private Map<String, String> parseQuery(String query) {
+        Map<String, String> queryParams = new HashMap<>();
+        if (query != null) {
+            String[] params = query.split("&");
+            for (String param : params) {
+                String[] keyValue = param.split("=");
+                if (keyValue.length == 2) {
+                    String key = keyValue[0];
+                    String value = keyValue[1];
+                    // 对参数值进行 URL 解码
+                    try {
+                        value = URLDecoder.decode(value, StandardCharsets.UTF_8.name());
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+                    queryParams.put(key, value);
+                }
+            }
+        }
+        return queryParams;
     }
 }

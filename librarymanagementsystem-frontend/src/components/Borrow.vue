@@ -63,7 +63,12 @@ export default {
     methods: {
         async QueryBorrows() {
             this.tableData = [] // 清空列表
-            let response = await axios.get('/borrow', { params: { cardID: this.toQuery } }) // 向/borrow发出GET请求，参数为cardID=this.toQuery
+            let response = await axios.get('/borrow', 
+                { 
+                    params: { 
+                        cardID: this.toQuery
+                    }
+                })
             let borrows = response.data // 获取响应负载
             borrows.forEach(borrow => { // 对于每一个借书记录
                 this.tableData.push(borrow) // 将它加入到列表项中

@@ -43,7 +43,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
             pStmt.setString(5, author);
             rSet = pStmt.executeQuery();
             if (rSet.next()) {
-                return new ApiResult(false, "Already exist a same book.");
+                return new ApiResult(false, "图书新建失败：存在相同图书");
             }
 
             String storeBookQuery = "INSERT INTO book (category, title, press, publish_year, author, price, stock) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -80,7 +80,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 e.printStackTrace();
             }
         }
-        return new ApiResult(true, null);
+        return new ApiResult(true, "图书新建成功");
     }
 
     @Override
