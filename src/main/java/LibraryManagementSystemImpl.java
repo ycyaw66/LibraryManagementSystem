@@ -718,8 +718,8 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 return new ApiResult(false, "不存在该借书证");
             }
 
-            String removeBookQuery = "DELETE FROM card WHERE card_id = ?";
-            pStmt = conn.prepareStatement(removeBookQuery);
+            String removeCardQuery = "DELETE FROM card WHERE card_id = ?";
+            pStmt = conn.prepareStatement(removeCardQuery);
             pStmt.setInt(1, cardId);
             pStmt.executeUpdate();
 
