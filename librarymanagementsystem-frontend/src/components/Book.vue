@@ -71,7 +71,7 @@
 
         <!-- 批量入库对话框 -->
         <el-dialog v-model="newBookSetVisible" title="批量添加图书" width="30%" align-center>
-            <el-upload style="display: inline" :auto-upload="false" :on-change="handleChange" :before-upload="beforeUpload" :file-list="fileList" action="#">
+            <el-upload style="display: inline" :auto-upload="false" :on-change="handleChange" :file-list="fileList" action="#">
                 <el-button style="margin-left: 10pt; margin-top: 10pt" type="success">选择文件</el-button>
                 <template #tip>
                     <div style="margin-left: 10pt" class="el-upload__tip">
@@ -298,10 +298,14 @@ export default {
                 ElMessage.error("请上传.csv文件");
                 return;
             }
-
             const formData = new FormData();
-            formData.append('file', file);
-            axios.post('/bookset', formData)
+            formData.append('file', file.raw);
+            
+            axios.post('/bookset', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                })
                 .then(response => {
                     ElMessage.success(response.data)
                     this.newBookSetVisible = false

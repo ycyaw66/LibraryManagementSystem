@@ -3,8 +3,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-
-import org.json.JSONObject;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.sun.net.httpserver.*;
 
@@ -33,7 +33,7 @@ public class BookSetHandler implements HttpHandler {
         try {
             connector = new DatabaseConnector(connectConfig);
             library = new LibraryManagementSystemImpl(connector);
-            System.out.println("Successfully init class BookHandler.");
+            System.out.println("Successfully init class BookSetHandler.");
             connector.connect();
             System.out.println("Successfully connect to database.");
         } catch (Exception e) {
@@ -60,19 +60,31 @@ public class BookSetHandler implements HttpHandler {
     }
 
     private void handlePostRequest(HttpExchange exchange) throws IOException {
-        String request = parseRequestBody(exchange);
-        JSONObject jsonObject = new JSONObject(request);
+        InputStream requestBody = exchange.getRequestBody();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(requestBody));
         try {
-            String category = jsonObject.getString("category");
-            String title = jsonObject.getString("title");
-            String author = jsonObject.getString("author");
-            String press = jsonObject.getString("press");
-            int publishYear = jsonObject.getInt("publishYear");
-            double price = jsonObject.getDouble("price");
-            int stock = jsonObject.getInt("stock");
-
-            Book book = new Book(category, title, press, publishYear, author, price, stock);
-            ApiResult result = library.storeBook(book);
+            String line;
+            List<Book> books = new ArrayList<>();
+            int flag = 0;
+            while ((line = reader.readLine()) != null) {
+                String[] bookInfo = line.split(",");
+                if (bookInfo.length == 7 && flag == 0) { // 跳过.csv属性标题
+                    flag = 1;
+                    continue;
+                }
+                if (bookInfo.length == 7 && flag == 1) {
+                    String category = bookInfo[0];
+                    String title = bookInfo[1];
+                    String press = bookInfo[2];
+                    int publishYear = Integer.parseInt(bookInfo[3]);
+                    String author = bookInfo[4];
+                    double price = Double.parseDouble(bookInfo[5]);
+                    int stock = Integer.parseInt(bookInfo[6]);
+                    Book book = new Book(category, title, press, publishYear, author, price, stock);
+                    books.add(book);
+                }
+            }
+            ApiResult result = library.storeBook(books);
             if (result.ok == false) {
                 exchange.getResponseHeaders().set("Content-Type", "text/plain");
                 exchange.sendResponseHeaders(400, 0);
@@ -93,16 +105,5 @@ public class BookSetHandler implements HttpHandler {
             outputStream.write("批量入库失败".getBytes());
             outputStream.close();
         }
-    }
-
-    private String parseRequestBody(HttpExchange exchange) throws IOException {
-        InputStream requestBodyStream = exchange.getRequestBody();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(requestBodyStream));
-        StringBuilder requestBodyBuilder = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            requestBodyBuilder.append(line);
-        }
-        return requestBodyBuilder.toString();
     }
 }
