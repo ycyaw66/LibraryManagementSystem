@@ -28,6 +28,7 @@ public class Main {
             HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
             
             server.createContext("/book", new BookHandler());
+            server.createContext("/bookset", new BookSetHandler());
             server.createContext("/card", new CardHandler());
             server.createContext("/borrow", new BorrowHandler());
             server.createContext("/return", new ReturnHandler());

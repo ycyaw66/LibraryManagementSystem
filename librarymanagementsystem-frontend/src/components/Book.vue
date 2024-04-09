@@ -13,6 +13,9 @@
             <el-button style="margin-left: 20px;" type="primary" @click="QueryBooks">查询</el-button>
 
             <el-button @click="newBookInfo.category = '', newBookInfo.title = '', newBookInfo.author = '', newBookInfo.press = '', newBookInfo.publishYear = 2000, newBookInfo.price = 0, newBookInfo.stock = 0, newBookVisible = true" style="margin-left: 20px;" type="success">添加</el-button>
+
+            <el-button @change="handleFileUpload" style="margin-left: 20px;" type="success" @click="newBookSetVisible = true">批量入库</el-button>
+            
         </div>
 
         <!-- 查询框第二行 + 借书和还书按钮 -->
@@ -62,6 +65,25 @@
                 <span>
                     <el-button @click="newBookVisible = false">取消</el-button>
                     <el-button type="primary" @click="ConfirmNewBook" :disabled="newBookInfo.category.length === 0 || newBookInfo.title.length === 0 || newBookInfo.author.length === 0 || newBookInfo.press.length === 0 || newBookInfo.publishYear == null || newBookInfo.price == null || newBookInfo.stock == null">确定</el-button>
+                </span>
+            </template>
+        </el-dialog>
+
+        <!-- 批量入库对话框 -->
+        <el-dialog v-model="newBookSetVisible" title="批量添加图书" width="30%" align-center>
+            <el-upload style="display: inline" :auto-upload="false" :on-change="handleChange" :before-upload="beforeUpload" :file-list="fileList" action="#">
+                <el-button style="margin-left: 10pt; margin-top: 10pt" type="success">选择文件</el-button>
+                <template #tip>
+                    <div style="margin-left: 10pt" class="el-upload__tip">
+                        请上传.csv文件
+                    </div>
+                </template>
+            </el-upload>
+
+            <template #footer>
+                <span>
+                    <el-button @click="newBookSetVisible = false">取消</el-button>
+                    <el-button type="primary" @click="ConfirmNewBookSet" :disabled="false">确定</el-button>
                 </span>
             </template>
         </el-dialog>
@@ -204,6 +226,7 @@ export default {
         return {
             isShow: false, // 结果表格展示状态
             newBookVisible: false, // 新建图书对话框可见性
+            newBookSetVisible: false, // 批量入库图书对话框可见性
             modifyBookVisible: false, // 编辑图书对话框可见性
             removeBookVisible: false, // 删除图书对话框可见性
             modifyStockVisible: false, // 修改库存对话框可见性
@@ -212,6 +235,7 @@ export default {
             toRemove: 0, // 待删除的图书编号
             borrowReturnBook: 0, // 借/还的图书编号
             borrowReturnCard: 0, // 借/还的借书证编号
+            selectedFileList: [],
             books: [{ // 书籍列表
                 book_id: 0,
                 category: 'test',
@@ -257,6 +281,37 @@ export default {
         }
     },
     methods: {
+        handleChange(file, fileList) {
+            if (fileList.length > 1) { // 只能选择一个文件
+                fileList.splice(0, fileList.length - 1);
+            }
+            this.selectedFileList = fileList;
+        },
+        ConfirmNewBookSet() {
+            if (this.selectedFileList.length == 0) {
+                ElMessage.error("请选择文件");
+                return;
+            }
+            const file = this.selectedFileList[0];
+            const fileType = file.name.split('.').pop();
+            if (fileType != 'csv') {
+                ElMessage.error("请上传.csv文件");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            axios.post('/bookset', formData)
+                .then(response => {
+                    ElMessage.success(response.data)
+                    this.newBookSetVisible = false
+                    this.QueryBooks()
+                })
+                .catch(error => {
+                    ElMessage.error(error.response.data)
+                })
+            
+        },
         ConfirmNewBook() {
             axios.post("/book",
                 {

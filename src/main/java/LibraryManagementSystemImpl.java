@@ -164,7 +164,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
 
                 if (rSet.next()) {
                     rollback(conn);
-                    return new ApiResult(false, "图书添加失败：存在相同图书");
+                    return new ApiResult(false, "批量入库失败：存在相同图书");
                 }
 
                 pStmt_i.setString(1, category);
@@ -204,7 +204,7 @@ public class LibraryManagementSystemImpl implements LibraryManagementSystem {
                 e.printStackTrace();
             }
         }
-        return new ApiResult(true, "图书添加成功");
+        return new ApiResult(true, "批量入库成功");
     }
 
     @Override

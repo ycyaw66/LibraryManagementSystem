@@ -8,12 +8,12 @@ import org.json.JSONObject;
 
 import com.sun.net.httpserver.*;
 
-import entities.Borrow;
+import entities.Book;
 import queries.ApiResult;
 import utils.ConnectConfig;
 import utils.DatabaseConnector;
 
-public class ReturnHandler implements HttpHandler {
+public class BookSetHandler implements HttpHandler {
 
     private DatabaseConnector connector;
     private LibraryManagementSystem library;
@@ -29,11 +29,11 @@ public class ReturnHandler implements HttpHandler {
         }
     }
 
-    public ReturnHandler() {
+    public BookSetHandler() {
         try {
             connector = new DatabaseConnector(connectConfig);
             library = new LibraryManagementSystemImpl(connector);
-            System.out.println("Successfully init class ReturnHandler.");
+            System.out.println("Successfully init class BookHandler.");
             connector.connect();
             System.out.println("Successfully connect to database.");
         } catch (Exception e) {
@@ -46,12 +46,12 @@ public class ReturnHandler implements HttpHandler {
     public void handle(HttpExchange exchange) throws IOException {
         Headers headers = exchange.getResponseHeaders();
         headers.add("Access-Control-Allow-Origin", "*");
-        headers.add("Access-Control-Allow-Methods", "PUT");
+        headers.add("Access-Control-Allow-Methods", "POST");
         headers.add("Access-Control-Allow-Headers", "Content-Type");
         
         String requestMethod = exchange.getRequestMethod();
-        if (requestMethod.equals("PUT")) {
-            handlePutRequest(exchange);
+        if (requestMethod.equals("POST")) {
+            handlePostRequest(exchange);
         } else if (requestMethod.equals("OPTIONS")) {
             exchange.sendResponseHeaders(204, -1);
         } else {
@@ -59,15 +59,20 @@ public class ReturnHandler implements HttpHandler {
         }
     }
 
-    private void handlePutRequest(HttpExchange exchange) throws IOException {
+    private void handlePostRequest(HttpExchange exchange) throws IOException {
         String request = parseRequestBody(exchange);
         JSONObject jsonObject = new JSONObject(request);
         try {
-            int bookId = jsonObject.getInt("book_id");
-            int cardId = jsonObject.getInt("card_id");
-            Borrow borrow = new Borrow(bookId, cardId);
-            borrow.resetReturnTime();
-            ApiResult result = library.returnBook(borrow);
+            String category = jsonObject.getString("category");
+            String title = jsonObject.getString("title");
+            String author = jsonObject.getString("author");
+            String press = jsonObject.getString("press");
+            int publishYear = jsonObject.getInt("publishYear");
+            double price = jsonObject.getDouble("price");
+            int stock = jsonObject.getInt("stock");
+
+            Book book = new Book(category, title, press, publishYear, author, price, stock);
+            ApiResult result = library.storeBook(book);
             if (result.ok == false) {
                 exchange.getResponseHeaders().set("Content-Type", "text/plain");
                 exchange.sendResponseHeaders(400, 0);
@@ -85,7 +90,7 @@ public class ReturnHandler implements HttpHandler {
             exchange.getResponseHeaders().set("Content-Type", "text/plain");
             exchange.sendResponseHeaders(500, 0);
             OutputStream outputStream = exchange.getResponseBody();
-            outputStream.write("还书失败".getBytes());
+            outputStream.write("批量入库失败".getBytes());
             outputStream.close();
         }
     }
